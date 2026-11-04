@@ -1,0 +1,127 @@
+import React, { useState } from 'react';
+import { useQueue } from '../context/QueueContext';
+import { Activity, Lock, Mail, ShieldCheck } from 'lucide-react';
+
+export default function Login() {
+    const { login } = useQueue();
+    const [email, setEmail] = useState('nurse@citycare.org');
+    const [password, setPassword] = useState('password123');
+    const [remember, setRemember] = useState(true);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        login(email);
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+
+            {/* Hospital Logo & Header */}
+            <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+                <div className="inline-flex w-14 h-14 rounded-2xl bg-cyan-600 items-center justify-center text-white shadow-lg shadow-cyan-600/30 mb-3">
+                    <Activity className="w-8 h-8 stroke-[2.2]" />
+                </div>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                    City Care Hospital
+                </h2>
+                <p className="text-xs font-semibold uppercase tracking-wider text-cyan-600 mt-0.5">
+                    MediQueue — OPD Staff Portal
+                </p>
+            </div>
+
+            {/* Login Card (Screen 1 Left) */}
+            <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
+                <div className="bg-white py-8 px-6 shadow-xl shadow-slate-200/60 rounded-2xl border border-slate-200 sm:px-10">
+
+                    <div className="mb-6">
+                        <h3 className="text-base font-bold text-slate-800">
+                            Welcome, OPD Receptionist / Nurse
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                            Sign in to manage patient queues and triage calling.
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+
+                        {/* Staff ID / Email */}
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                Staff ID / Hospital Email
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <Mail className="w-4 h-4" />
+                                </div>
+                                <input
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
+                                    placeholder="nurse@citycare.org"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Password */}
+                        <div>
+                            <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                Password
+                            </label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                    <Lock className="w-4 h-4" />
+                                </div>
+                                <input
+                                    type="password"
+                                    required
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Remember Me */}
+                        <div className="flex items-center justify-between text-xs pt-1">
+                            <label className="flex items-center gap-2 cursor-pointer text-slate-600">
+                                <input
+                                    type="checkbox"
+                                    checked={remember}
+                                    onChange={(e) => setRemember(e.target.checked)}
+                                    className="w-4 h-4 text-cyan-600 rounded-sm"
+                                />
+                                Remember station
+                            </label>
+                            <span className="text-cyan-600 font-semibold cursor-pointer">
+                                Forgot password?
+                            </span>
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            type="submit"
+                            className="w-full mt-2 py-2.5 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-semibold text-xs shadow-md shadow-cyan-600/20 transition active:scale-98 cursor-pointer"
+                        >
+                            Sign In to OPD Desk
+                        </button>
+
+                    </form>
+
+                    {/* Footer badge */}
+                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                        <div className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>HIPAA Compliant System</span>
+                        </div>
+                        <span>v1.0.0</span>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    );
+}
