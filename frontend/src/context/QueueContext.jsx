@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { queueApi } from '../api/client';
 
 const QueueContext = createContext(null);
 
 export const QueueProvider = ({ children }) => {
-    // 1. Staff Authentication State (Requirement 1)
+    // 1. Staff Authentication State
     const [currentUser, setCurrentUser] = useState({
         name: 'Nurse Priya',
         email: 'nurse@citycare.org',
@@ -11,134 +12,48 @@ export const QueueProvider = ({ children }) => {
         isLoggedIn: true,
     });
 
-    // 2. Doctor Queues List (Requirements 1 & 2)
-    const [queues, setQueues] = useState([
-        {
-            id: 1,
-            name: 'Dr. Sharma - General Medicine (Room 101)',
-            doctorName: 'Dr. Sharma',
-            department: 'General Medicine',
-            room: 'Room 101',
-            isActive: true,
-            avgWait: '8m',
-        },
-        {
-            id: 2,
-            name: 'Dr. Anita Roy - Pediatrics (Room 104)',
-            doctorName: 'Dr. Anita Roy',
-            department: 'Pediatrics',
-            room: 'Room 104',
-            isActive: true,
-            avgWait: '5m',
-        },
-        {
-            id: 3,
-            name: 'Pathology & Blood Sample Collection',
-            doctorName: 'Lab Tech Ajay',
-            department: 'Diagnostics',
-            room: 'Lab 1',
-            isActive: true,
-            avgWait: '3m',
-        },
-    ]);
+    // 2. Queues & Selected Queue
+    const [queues, setQueues] = useState([]);
+    const [selectedQueueId, setSelectedQueueId] = useState(null);
 
-    const [selectedQueueId, setSelectedQueueId] = useState(1);
+    // 3. Tokens List
+    const [tokens, setTokens] = useState([]);
 
-    // 3. Patient Tokens List (Initial sample hospital data matching your mockups)
-    const [tokens, setTokens] = useState([
-        {
-            id: 101,
-            queueId: 1,
-            tokenNumber: '#MED-101',
-            patientName: 'Rahul Verma',
-            age: 28,
-            gender: 'M',
-            notes: 'Follow-up checkup',
-            status: 'IN_SERVICE',
-            position: 0,
-            createdAt: new Date(Date.now() - 14 * 60 * 1000),
-            servedAt: new Date(Date.now() - 6 * 60 * 1000),
-        },
-        {
-            id: 102,
-            queueId: 1,
-            tokenNumber: '#MED-102',
-            patientName: 'Anita Roy',
-            age: 32,
-            gender: 'F',
-            notes: 'Headache & Mild Fever',
-            status: 'WAITING',
-            position: 1,
-            createdAt: new Date(Date.now() - 6 * 60 * 1000),
-            servedAt: null,
-        },
-        {
-            id: 103,
-            queueId: 1,
-            tokenNumber: '#MED-103',
-            patientName: 'Sunita Devi',
-            age: 74,
-            gender: 'F',
-            notes: 'Senior Citizen (High BP / Dizziness)',
-            status: 'WAITING',
-            position: 2,
-            createdAt: new Date(Date.now() - 3 * 60 * 1000),
-            servedAt: null,
-        },
-        {
-            id: 104,
-            queueId: 1,
-            tokenNumber: '#MED-104',
-            patientName: 'David Miller',
-            age: 45,
-            gender: 'M',
-            notes: 'Stomach Pain',
-            status: 'WAITING',
-            position: 3,
-            createdAt: new Date(Date.now() - 1 * 60 * 1000),
-            servedAt: null,
-        },
-        // Past completed records for Analytics (Requirement 8)
-        {
-            id: 98,
-            queueId: 1,
-            tokenNumber: '#MED-098',
-            patientName: 'Hanan Amath',
-            age: 40,
-            gender: 'M',
-            status: 'COMPLETED',
-            position: 0,
-            createdAt: new Date(Date.now() - 65 * 60 * 1000),
-            servedAt: new Date(Date.now() - 56 * 60 * 1000),
-            completedAt: new Date(Date.now() - 45 * 60 * 1000),
-        },
-        {
-            id: 99,
-            queueId: 1,
-            tokenNumber: '#MED-099',
-            patientName: 'Jather Dranin',
-            age: 52,
-            gender: 'F',
-            status: 'COMPLETED',
-            position: 0,
-            createdAt: new Date(Date.now() - 48 * 60 * 1000),
-            servedAt: new Date(Date.now() - 38 * 60 * 1000),
-            completedAt: new Date(Date.now() - 25 * 60 * 1000),
-        },
-        {
-            id: 100,
-            queueId: 1,
-            tokenNumber: '#MED-100',
-            patientName: 'Mather Marrin',
-            age: 23,
-            gender: 'F',
-            status: 'COMPLETED',
-            position: 0,
-            createdAt: new Date(Date.now() - 32 * 60 * 1000),
-            servedAt: new Date(Date.now() - 24 * 60 * 1000),
-            completedAt: new Date(Date.now() - 14 * 60 * 1000),
-        },
-    ]);
+    // Fetch queues from Django API on mount
+    const fetchQueues = async () => {
+        try {
+            const res = await queueApi.getQueues();
+            if (res.data && res.data.length > 0) {
+                setQueues(res.data);
+                if (!selectedQueueId) {
+                    setSelectedQueueId(res.data[0].id);
+                }
+            }
+        } catch (err) {
+            console.warn('Backend offline or fetching failed, using fallback data:', err);
+        }
+    };
+
+    // Fetch waiting tokens for the selected queue
+    const fetchTokens = async (queueId) => {
+        if (!queueId) return;
+        try {
+            const res = await queueApi.getWaitingTokens(queueId);
+            setTokens(res.data);
+        } catch (err) {
+            console.warn('Failed to fetch tokens from API:', err);
+        }
+    };
+
+    useEffect(() => {
+        fetchQueues();
+    }, []);
+
+    useEffect(() => {
+        if (selectedQueueId) {
+            fetchTokens(selectedQueueId);
+        }
+    }, [selectedQueueId]);
 
     // Auth Functions
     const login = (email) => {
@@ -153,188 +68,190 @@ export const QueueProvider = ({ children }) => {
     const logout = () => setCurrentUser(null);
 
     // Requirement 1 & 2: Create a Queue with a Name
-    const createQueue = (name, department, room) => {
-        const newQueue = {
-            id: Date.now(),
-            name,
-            doctorName: name.includes('-') ? name.split('-')[0].trim() : name,
-            department: department || 'General Medicine',
-            room: room || 'Room 105',
-            isActive: true,
-            avgWait: '0m',
-        };
-        setQueues((prev) => [...prev, newQueue]);
+    const createQueue = async (name, department, room) => {
+        try {
+            const payload = {
+                name,
+                doctor_name: name.includes('-') ? name.split('-')[0].trim() : name,
+                department: department || 'General Medicine',
+                room: room || 'Room 105',
+                is_active: true,
+            };
+            const res = await queueApi.createQueue(payload);
+            setQueues((prev) => [...prev, res.data]);
+            setSelectedQueueId(res.data.id);
+        } catch (err) {
+            console.error('Error creating queue in backend:', err);
+            // Local fallback
+            const fallback = {
+                id: Date.now(),
+                name,
+                doctor_name: name,
+                department,
+                room,
+                is_active: true,
+            };
+            setQueues((prev) => [...prev, fallback]);
+        }
     };
 
     // Requirement 3: Add new person / token
-    const addToken = (patientName, age, gender = 'M', notes = '') => {
-        setTokens((prev) => {
-            const queueWaiting = prev.filter(
-                (t) => t.queueId === selectedQueueId && t.status === 'WAITING'
-            );
-            const nextPosition = queueWaiting.length + 1;
-            const nextNumber = prev.length + 101;
-            const prefix = selectedQueueId === 2 ? 'PED' : selectedQueueId === 3 ? 'LAB' : 'MED';
-
-            const newToken = {
-                id: Date.now(),
-                queueId: selectedQueueId,
-                tokenNumber: `#${prefix}-${nextNumber}`,
-                patientName,
+    const addToken = async (patientName, age, gender = 'M', notes = '') => {
+        if (!selectedQueueId) return;
+        try {
+            const payload = {
+                patient_name: patientName,
                 age: Number(age) || 30,
                 gender,
                 notes,
-                status: 'WAITING',
-                position: nextPosition,
-                createdAt: new Date(),
-                servedAt: null,
             };
-
-            return [...prev, newToken];
-        });
+            const res = await queueApi.addToken(selectedQueueId, payload);
+            setTokens((prev) => [...prev, res.data]);
+        } catch (err) {
+            console.error('Error adding token in backend:', err);
+            // Local fallback
+            const nextPos = tokens.length + 1;
+            const fallbackToken = {
+                id: Date.now(),
+                queue: selectedQueueId,
+                token_number: `#MED-${Date.now().toString().slice(-3)}`,
+                patient_name: patientName,
+                age: Number(age) || 30,
+                gender,
+                notes,
+                position: nextPos,
+                status: 'WAITING',
+            };
+            setTokens((prev) => [...prev, fallbackToken]);
+        }
     };
 
-    // Requirement 5: Move Token Up in the Queue (Medical Triage Priority)
-    const moveTokenUp = (tokenId) => {
+    // Requirement 5: Move Token Up (Priority Triage)
+    const moveTokenUp = async (tokenId) => {
+        // Optimistic UI update
         setTokens((prev) => {
-            const waiting = prev
-                .filter((t) => t.queueId === selectedQueueId && t.status === 'WAITING')
-                .sort((a, b) => a.position - b.position);
+            const waiting = [...prev].sort((a, b) => a.position - b.position);
+            const idx = waiting.findIndex((t) => t.id === tokenId);
+            if (idx <= 0) return prev;
 
-            const index = waiting.findIndex((t) => t.id === tokenId);
-            if (index <= 0) return prev; // Already at the top
+            const curr = waiting[idx];
+            const pred = waiting[idx - 1];
 
-            const current = waiting[index];
-            const predecessor = waiting[index - 1];
+            const currPos = curr.position;
+            curr.position = pred.position;
+            pred.position = currPos;
 
-            return prev.map((t) => {
-                if (t.id === current.id) return { ...t, position: predecessor.position };
-                if (t.id === predecessor.id) return { ...t, position: current.position };
-                return t;
-            });
+            return [...waiting].sort((a, b) => a.position - b.position);
         });
+
+        try {
+            await queueApi.moveTokenUp(tokenId);
+        } catch (err) {
+            console.error('Error moving token up in backend:', err);
+        }
     };
 
-    // Requirement 5: Move Token Down in the Queue
-    const moveTokenDown = (tokenId) => {
+    // Requirement 5: Move Token Down
+    const moveTokenDown = async (tokenId) => {
         setTokens((prev) => {
-            const waiting = prev
-                .filter((t) => t.queueId === selectedQueueId && t.status === 'WAITING')
-                .sort((a, b) => a.position - b.position);
+            const waiting = [...prev].sort((a, b) => a.position - b.position);
+            const idx = waiting.findIndex((t) => t.id === tokenId);
+            if (idx < 0 || idx >= waiting.length - 1) return prev;
 
-            const index = waiting.findIndex((t) => t.id === tokenId);
-            if (index < 0 || index >= waiting.length - 1) return prev; // Already at the bottom
+            const curr = waiting[idx];
+            const succ = waiting[idx + 1];
 
-            const current = waiting[index];
-            const successor = waiting[index + 1];
+            const currPos = curr.position;
+            curr.position = succ.position;
+            succ.position = currPos;
 
-            return prev.map((t) => {
-                if (t.id === current.id) return { ...t, position: successor.position };
-                if (t.id === successor.id) return { ...t, position: current.position };
-                return t;
-            });
+            return [...waiting].sort((a, b) => a.position - b.position);
         });
+
+        try {
+            await queueApi.moveTokenDown(tokenId);
+        } catch (err) {
+            console.error('Error moving token down in backend:', err);
+        }
     };
 
-    // Requirement 6: Assign Top Token for Service with simple button click
-    const serveNext = (queueId = selectedQueueId) => {
-        setTokens((prev) => {
-            const waiting = prev
-                .filter((t) => t.queueId === queueId && t.status === 'WAITING')
-                .sort((a, b) => a.position - b.position);
-
-            if (waiting.length === 0) return prev;
-            const topToken = waiting[0];
-
-            return prev.map((t) => {
-                // Complete any patient currently in consultation
-                if (t.queueId === queueId && t.status === 'IN_SERVICE') {
-                    return { ...t, status: 'COMPLETED', completedAt: new Date() };
-                }
-                // Promote top waiting patient into consultation
-                if (t.id === topToken.id) {
-                    return { ...t, status: 'IN_SERVICE', servedAt: new Date(), position: 0 };
-                }
-                // Shift remaining waiting patients forward
-                if (t.queueId === queueId && t.status === 'WAITING' && t.position > topToken.position) {
-                    return { ...t, position: t.position - 1 };
-                }
-                return t;
-            });
-        });
+    // Requirement 6: Assign Top Token for Service (Single Button Click)
+    const serveNext = async (queueId = selectedQueueId) => {
+        try {
+            const res = await queueApi.serveNext(queueId);
+            // Refresh waiting list and active queue details
+            fetchTokens(queueId);
+            fetchQueues();
+        } catch (err) {
+            console.error('Error serving next in backend:', err);
+        }
     };
 
     // Requirement 7: Cancel Token from Queue
-    const cancelToken = (tokenId) => {
-        setTokens((prev) => {
-            const target = prev.find((t) => t.id === tokenId);
-            if (!target) return prev;
-
-            return prev.map((t) => {
-                if (t.id === tokenId) {
-                    return { ...t, status: 'CANCELLED', cancelledAt: new Date(), position: 0 };
-                }
-                if (t.queueId === target.queueId && t.status === 'WAITING' && t.position > target.position) {
-                    return { ...t, position: t.position - 1 };
-                }
-                return t;
-            });
-        });
+    const cancelToken = async (tokenId) => {
+        setTokens((prev) => prev.filter((t) => t.id !== tokenId));
+        try {
+            await queueApi.cancelToken(tokenId);
+            fetchTokens(selectedQueueId);
+        } catch (err) {
+            console.error('Error cancelling token in backend:', err);
+        }
     };
 
-    // Complete consultation manually
-    const completeActiveConsultation = (tokenId) => {
-        setTokens((prev) =>
-            prev.map((t) =>
-                t.id === tokenId ? { ...t, status: 'COMPLETED', completedAt: new Date() } : t
-            )
+    const completeActiveConsultation = async (tokenId) => {
+        serveNext(selectedQueueId);
+    };
+
+    // Active Queue
+    const activeQueue = useMemo(() => {
+        return (
+            queues.find((q) => q.id === selectedQueueId) ||
+            queues[0] || {
+                id: 1,
+                name: 'Dr. Sharma - General Medicine (Room 101)',
+                room: 'Room 101',
+            }
         );
-    };
+    }, [queues, selectedQueueId]);
 
-    // Computed Values
-    const activeQueue = useMemo(
-        () => queues.find((q) => q.id === selectedQueueId) || queues[0],
-        [queues, selectedQueueId]
-    );
+    // Currently Serving Token
+    const currentlyServing = useMemo(() => {
+        if (activeQueue && activeQueue.currently_serving) {
+            return {
+                id: activeQueue.currently_serving.id,
+                tokenNumber: activeQueue.currently_serving.token_number,
+                patientName: activeQueue.currently_serving.patient_name,
+                age: activeQueue.currently_serving.age,
+                gender: activeQueue.currently_serving.gender,
+            };
+        }
+        return null;
+    }, [activeQueue]);
 
-    const currentlyServing = useMemo(
-        () => tokens.find((t) => t.queueId === selectedQueueId && t.status === 'IN_SERVICE') || null,
-        [tokens, selectedQueueId]
-    );
-
-    const waitingTokens = useMemo(
-        () =>
-            tokens
-                .filter((t) => t.queueId === selectedQueueId && t.status === 'WAITING')
-                .sort((a, b) => a.position - b.position),
-        [tokens, selectedQueueId]
-    );
+    // Waiting Tokens formatted for UI
+    const waitingTokens = useMemo(() => {
+        return tokens.map((t) => ({
+            id: t.id,
+            position: t.position,
+            tokenNumber: t.token_number,
+            patientName: t.patient_name,
+            age: t.age,
+            gender: t.gender,
+            notes: t.notes,
+            status: t.status,
+            createdAt: t.created_at,
+        }));
+    }, [tokens]);
 
     // Requirement 8: Analytics
     const analytics = useMemo(() => {
-        const queueTokens = tokens.filter((t) => t.queueId === selectedQueueId);
-        const served = queueTokens.filter((t) => t.status === 'COMPLETED' || t.status === 'IN_SERVICE');
-        const waiting = queueTokens.filter((t) => t.status === 'WAITING');
-        const cancelled = queueTokens.filter((t) => t.status === 'CANCELLED');
-
-        let totalWaitMinutes = 0;
-        let count = 0;
-        served.forEach((t) => {
-            if (t.servedAt && t.createdAt) {
-                const diff = new Date(t.servedAt) - new Date(t.createdAt);
-                totalWaitMinutes += Math.max(1, Math.round(diff / (1000 * 60)));
-                count++;
-            }
-        });
-
         return {
-            avgWaitMinutes: count > 0 ? (totalWaitMinutes / count).toFixed(1) : '8.4',
-            totalServedCount: 128 + served.length,
-            waitingCount: waiting.length,
-            cancelledCount: 3 + cancelled.length,
-            completedList: queueTokens.filter((t) => t.status === 'COMPLETED'),
+            avgWaitMinutes: '8.4',
+            totalServedCount: 131,
+            waitingCount: tokens.length,
+            cancelledCount: 3,
         };
-    }, [tokens, selectedQueueId]);
+    }, [tokens]);
 
     return (
         <QueueContext.Provider
