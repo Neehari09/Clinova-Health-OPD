@@ -101,7 +101,7 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 pb-20 sm:pb-8">
+    <div className="min-h-screen bg-slate-50 text-slate-800 pb-20 sm:pb-8 overflow-x-hidden w-full">
 
       {/* 1. Responsive Hospital Header with Glassmorphism & Status */}
       <header className="glass-panel sticky top-0 z-30 shadow-xs transition-all bg-white/95">
