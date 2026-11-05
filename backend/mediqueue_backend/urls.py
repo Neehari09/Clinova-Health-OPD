@@ -19,5 +19,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('queues.urls')),  # Connects all MediQueue API endpoints
+    path('api/', include('queues.urls')),  # Connects all Clinova Health API endpoints
 ]
