@@ -1,3 +1,4 @@
+import StethoscopeHeartLogo from './components/StethoscopeHeartLogo';
 import React, { useState } from 'react';
 import { QueueProvider, useQueue } from './context/QueueContext';
 import {
@@ -107,16 +108,15 @@ function Dashboard() {
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-18">
 
-            {/* Hospital Logo & Live Pulse */}
-            <div className="flex items-center gap-2.5 sm:gap-3.5">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-cyan-600 via-teal-600 to-emerald-500 flex items-center justify-center text-white shadow-md shadow-cyan-600/25 shrink-0">
-                <Activity className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-              </div>
+            {/* Hospital Logo: Option 3 Stethoscope & Heart Rhythm */}
+            <div className="flex items-center gap-3">
+              <StethoscopeHeartLogo size={44} />
               <div>
-                <h1 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight tracking-tight">
-                  Clinova <span className="text-cyan-600">Health</span>
+                <h1 className="text-base sm:text-lg font-black text-slate-900 leading-tight tracking-tight flex items-center gap-1">
+                  <span>Clinova</span>
+                  <span className="text-teal-600">Health</span>
                 </h1>
-                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                   Smart OPD & Patient Flow System
                 </p>
               </div>
@@ -161,18 +161,18 @@ function Dashboard() {
               </button>
             </nav>
 
-            {/* Right Header Actions */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            {/* Right Header Actions with Generous Spacing / Gap */}
+            <div className="flex items-center gap-3 sm:gap-4 md:ml-6 lg:ml-8">
 
               {/* Doctor / Department Selector — visible before Register Patient ONLY in Live OPD Board */}
               {activeTab === 'board' && queues && queues.length > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100/90 rounded-xl border border-slate-200 shadow-2xs">
-                  <Stethoscope className="w-3.5 h-3.5 text-cyan-700 shrink-0" />
-                  <span className="text-[11px] font-bold text-slate-500 hidden lg:inline">Doctor / Department:</span>
+                <div className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-slate-200 shadow-xs ring-1 ring-slate-100">
+                  <Stethoscope className="w-4 h-4 text-cyan-700 shrink-0" />
+                  <span className="text-[11px] font-extrabold text-slate-500 hidden xl:inline">Doctor / Department:</span>
                   <select
                     value={selectedQueueId || ''}
                     onChange={(e) => setSelectedQueueId(Number(e.target.value))}
-                    className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer max-w-[150px] sm:max-w-[210px] truncate"
+                    className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer max-w-[160px] sm:max-w-[240px] truncate"
                     title="Select Doctor / Department"
                   >
                     {queues.map((q) => {
@@ -190,7 +190,7 @@ function Dashboard() {
               {/* + Register Patient Button */}
               <button
                 onClick={() => setIsPatientModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer shrink-0"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer shrink-0"
               >
                 <PlusCircle className="w-4 h-4 stroke-[2.2]" />
                 <span>Register Patient</span>

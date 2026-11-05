@@ -1,3 +1,4 @@
+import StethoscopeHeartLogo from './StethoscopeHeartLogo';
 import React, { useState } from 'react';
 import { useQueue } from '../context/QueueContext';
 import { Activity, Lock, Mail, ShieldCheck } from 'lucide-react';
@@ -16,13 +17,14 @@ export default function Login() {
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
 
-            {/* Hospital Logo & Header */}
+            {/* Hospital Logo & Header: Option 3 Stethoscope & Heart Rhythm */}
             <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-                <div className="inline-flex w-14 h-14 rounded-2xl bg-cyan-600 items-center justify-center text-white shadow-lg shadow-cyan-600/30 mb-3">
-                    <Activity className="w-8 h-8 stroke-[2.2]" />
+                <div className="inline-flex items-center justify-center mb-3">
+                    <StethoscopeHeartLogo size={56} />
                 </div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                    Clinova Health
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-1.5">
+                    <span>Clinova</span>
+                    <span className="text-teal-600">Health</span>
                 </h2>
                 <p className="text-xs font-semibold uppercase tracking-wider text-cyan-600 mt-0.5">
                     Smart OPD & Patient Flow System
