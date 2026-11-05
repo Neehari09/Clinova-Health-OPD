@@ -2,58 +2,82 @@ import React from 'react';
 
 /**
  * Option 3: Stethoscope & Heart Rhythm Logo for Clinova Health
- * A modern physician's stethoscope looped into an elegant heart with an embedded ECG pulse wave.
+ * Exact match to the concept design:
+ * - Pure clean white background (no colored gradient block)
+ * - Deep teal / cyan stethoscope on the left forming earpieces & chest piece
+ * - Looping into a turquoise heart contour in the center
+ * - Flowing smoothly into an emerald-green ECG pulse rhythm on the right
  */
-export default function StethoscopeHeartLogo({ size = 44, className = '' }) {
+export default function StethoscopeHeartLogo({ size = 52, className = '' }) {
+    // Aspect ratio 140 width x 70 height gives the exact horizontal balance shown in Option 3 card
+    const width = Math.round(size * 1.6);
+    const height = size;
+
     return (
         <div 
-            style={{ width: size, height: size }}
-            className={`relative rounded-2xl bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-600 p-2 shadow-md shadow-cyan-600/25 flex items-center justify-center shrink-0 border border-white/20 ${className}`}
+            style={{ width, height }}
+            className={`inline-flex items-center justify-center shrink-0 bg-transparent ${className}`}
         >
             <svg 
-                viewBox="0 0 100 100" 
-                className="w-full h-full drop-shadow-xs" 
+                viewBox="0 0 160 80" 
+                className="w-full h-full" 
                 fill="none" 
                 xmlns="http://www.w3.org/2000/svg"
             >
-                {/* 1. Stethoscope Binaural Earpieces & Upper Yoke */}
+                {/* 1. LEFT: Stethoscope Binaural Headset & Earpieces (Deep Teal #0e7490) */}
+                {/* Left Earpiece & Binaural Tube */}
                 <path 
-                    d="M 32 18 C 32 14, 37 13, 39 16 C 41 20, 44 26, 47 28" 
-                    stroke="white" 
-                    strokeWidth="4" 
+                    d="M 22 18 C 22 25, 26 35, 34 38" 
+                    stroke="#0891b2" 
+                    strokeWidth="3.5" 
                     strokeLinecap="round"
                 />
-                <circle cx="32" cy="18" r="3" fill="white" />
-                
+                <circle cx="21" cy="17" r="2.5" fill="#0e7490" />
+
+                {/* Right Earpiece & Binaural Tube */}
                 <path 
-                    d="M 68 18 C 68 14, 63 13, 61 16 C 59 20, 56 26, 53 28" 
-                    stroke="white" 
-                    strokeWidth="4" 
+                    d="M 38 18 C 38 24, 37 32, 34 38" 
+                    stroke="#0891b2" 
+                    strokeWidth="3.5" 
                     strokeLinecap="round"
                 />
-                <circle cx="68" cy="18" r="3" fill="white" />
+                <circle cx="39" cy="17" r="2.5" fill="#0e7490" />
 
-                {/* Yoke Connector */}
-                <circle cx="50" cy="30" r="3.5" fill="#f0fdfa" />
-
-                {/* 2. Tubing loops down into Heart Shape Contour */}
+                {/* Flexible Stethoscope Tubing curving down from headset */}
                 <path 
-                    d="M 50 32 C 50 36, 42 36, 32 40 C 20 46, 18 60, 26 71 C 33 80, 44 87, 50 92 C 56 87, 67 80, 74 71 C 82 60, 80 46, 68 40 C 58 36, 50 36, 50 32" 
-                    stroke="white" 
-                    strokeWidth="4.5" 
+                    d="M 34 38 C 34 48, 25 56, 32 66 C 36 71, 46 72, 54 67" 
+                    stroke="#0891b2" 
+                    strokeWidth="3.8" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
                 />
 
-                {/* 3. Stethoscope Chest Piece / Diaphragm */}
-                <circle cx="75" cy="52" r="7" fill="#0f766e" stroke="white" strokeWidth="2.5" />
-                <circle cx="75" cy="52" r="3" fill="#a7f3d0" />
-
-                {/* 4. Vivid Glowing ECG Lifeline Spanning the Center */}
+                {/* 2. CENTER: Heart Shape (Vibrant Medical Turquoise/Teal #0d9488) */}
                 <path 
-                    d="M 28 62 L 37 62 L 41 53 L 46 72 L 52 46 L 57 66 L 61 62 L 70 62" 
-                    stroke="#ecfdf5" 
+                    d="M 54 67 C 62 61, 74 46, 74 34 C 74 23, 62 21, 56 30 C 50 21, 38 23, 38 34 C 38 43, 46 54, 56 67" 
+                    stroke="#0d9488" 
+                    strokeWidth="4" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                />
+
+                {/* Tubing loop connecting towards the chest piece / diaphragm */}
+                <path 
+                    d="M 56 67 C 62 74, 76 74, 82 66 C 88 58, 86 48, 80 44" 
+                    stroke="#0891b2" 
                     strokeWidth="3.5" 
+                    strokeLinecap="round"
+                />
+
+                {/* Stethoscope Chest Piece / Bell & Diaphragm */}
+                <circle cx="80" cy="44" r="5" fill="#0e7490" stroke="#0891b2" strokeWidth="1.5" />
+                <circle cx="80" cy="44" r="2" fill="#67e8f9" />
+
+                {/* 3. RIGHT: Vivid Lifeline ECG Cardiogram Pulse Wave (Emerald Green #10b981) */}
+                <path 
+                    d="M 74 46 L 86 46 L 90 37 L 95 56 L 102 24 L 108 50 L 113 46 L 132 46" 
+                    stroke="#10b981" 
+                    strokeWidth="3.8" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
                 />

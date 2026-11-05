@@ -17,16 +17,16 @@ export default function Login() {
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
 
-            {/* Hospital Logo & Header: Option 3 Stethoscope & Heart Rhythm */}
+            {/* Hospital Logo & Header: Option 3 Stethoscope & Heart Rhythm on Pure White Card */}
             <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-                <div className="inline-flex items-center justify-center mb-3">
-                    <StethoscopeHeartLogo size={56} />
+                <div className="inline-flex items-center justify-center p-3.5 rounded-2xl bg-white border border-slate-200/90 shadow-md shadow-slate-200/50 mb-3.5">
+                    <StethoscopeHeartLogo size={64} />
                 </div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-1.5">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-2">
                     <span>Clinova</span>
                     <span className="text-teal-600">Health</span>
                 </h2>
-                <p className="text-xs font-semibold uppercase tracking-wider text-cyan-600 mt-0.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-cyan-700 mt-1">
                     Smart OPD & Patient Flow System
                 </p>
             </div>
