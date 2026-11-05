@@ -1,6 +1,5 @@
 # Clinova Health — Smart Hospital OPD Queue Management System
-
-A full-stack, enterprise-grade outpatient department (OPD) queue and clinical workflow platform developed for **Rugas Technologies**. Built with **React 19 + Tailwind CSS**, **Django 6 + REST Framework**, and **MySQL 8.0**.
+A full-stack, enterprise-grade outpatient department (OPD) queue and clinical workflow platform. Built with React 19 + Tailwind CSS, Django 6 + REST Framework, and MySQL 8.0.
 
 ---
 
@@ -62,3 +61,4 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
+
