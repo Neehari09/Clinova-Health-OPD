@@ -104,9 +104,9 @@ function Dashboard() {
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-20 sm:pb-8">
 
       {/* 1. Responsive Hospital Header with Glassmorphism & Status */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 shadow-xs">
+      <header className="glass-panel sticky top-0 z-30 shadow-xs transition-all">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-18">
+          <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
 
             {/* Hospital Logo: Option 3 Stethoscope & Heart Rhythm */}
             <div className="flex items-center gap-3">
@@ -161,18 +161,18 @@ function Dashboard() {
               </button>
             </nav>
 
-            {/* Right Header Actions with Generous Spacing / Gap */}
-            <div className="flex items-center gap-3 sm:gap-4 md:ml-6 lg:ml-8">
+            {/* Right Header Actions with Adaptive Responsiveness */}
+            <div className="flex items-center gap-2 sm:gap-3 md:ml-4 lg:ml-8 shrink-0">
 
               {/* Doctor / Department Selector — visible before Register Patient ONLY in Live OPD Board */}
               {activeTab === 'board' && queues && queues.length > 0 && (
-                <div className="flex items-center gap-2 px-3.5 py-2 bg-white rounded-xl border border-slate-200 shadow-xs ring-1 ring-slate-100">
-                  <Stethoscope className="w-4 h-4 text-cyan-700 shrink-0" />
+                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white rounded-xl border border-slate-200/90 shadow-xs ring-1 ring-slate-100">
+                  <Stethoscope className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-700 shrink-0" />
                   <span className="text-[11px] font-extrabold text-slate-500 hidden xl:inline">Doctor / Department:</span>
                   <select
                     value={selectedQueueId || ''}
                     onChange={(e) => setSelectedQueueId(Number(e.target.value))}
-                    className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer max-w-[160px] sm:max-w-[240px] truncate"
+                    className="bg-transparent text-[11px] sm:text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer max-w-[110px] sm:max-w-[180px] md:max-w-[240px] truncate"
                     title="Select Doctor / Department"
                   >
                     {queues.map((q) => {
@@ -187,13 +187,14 @@ function Dashboard() {
                 </div>
               )}
 
-              {/* + Register Patient Button */}
+              {/* + Register Patient Button (Responsive icon on mobile, full text on tablet+) */}
               <button
                 onClick={() => setIsPatientModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer shrink-0"
               >
                 <PlusCircle className="w-4 h-4 stroke-[2.2]" />
-                <span>Register Patient</span>
+                <span className="hidden sm:inline">Register Patient</span>
+                <span className="sm:hidden">Register</span>
               </button>
 
               {/* Staff Profile Dropdown: Neehari Soule (Staff ID CN1021) */}
