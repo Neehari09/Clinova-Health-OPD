@@ -597,7 +597,7 @@ export default function Analytics() {
                         }`}
                     >
                         <Users className="w-3.5 h-3.5" />
-                        <span>Total Consultations ({completedConsultationsList.length})</span>
+                        <span>Total Consultations ({completedConsultationsList.length + (analytics.completedTokensList?.length || 0)})</span>
                     </button>
 
                     <button
