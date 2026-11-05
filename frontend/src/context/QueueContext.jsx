@@ -4,12 +4,14 @@ import { queueApi } from '../api/client';
 const QueueContext = createContext(null);
 
 export const QueueProvider = ({ children }) => {
-    // 1. Staff Authentication State
-    const [currentUser, setCurrentUser] = useState({
-        name: 'Neehari Soule',
-        email: 'CN1021',
-        station: 'OPD Department Desk 1',
-        isLoggedIn: true,
+    // 1. Staff Authentication State (starts logged out so user enters login form first)
+    const [currentUser, setCurrentUser] = useState(() => {
+        try {
+            const saved = sessionStorage.getItem('clinova_current_user');
+            return saved ? JSON.parse(saved) : null;
+        } catch {
+            return null;
+        }
     });
 
     // 2. Queues & Selected Queue
@@ -90,15 +92,24 @@ export const QueueProvider = ({ children }) => {
 
     // Auth Functions
     const login = (email) => {
-        setCurrentUser({
+        const userObj = {
             name: 'Neehari Soule',
             email: email || 'CN1021',
             station: 'OPD Department Desk 1',
             isLoggedIn: true,
-        });
+        };
+        try {
+            sessionStorage.setItem('clinova_current_user', JSON.stringify(userObj));
+        } catch (e) {}
+        setCurrentUser(userObj);
     };
 
-    const logout = () => setCurrentUser(null);
+    const logout = () => {
+        try {
+            sessionStorage.removeItem('clinova_current_user');
+        } catch (e) {}
+        setCurrentUser(null);
+    };
 
     // Requirement 1 & 2: Create a Queue with a Name
     const createQueue = async (name, department, room) => {

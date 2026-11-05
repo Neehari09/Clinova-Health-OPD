@@ -47,7 +47,7 @@ function Dashboard() {
     analytics
   } = useQueue();
 
-  const [activeTab, setActiveTab] = useState('board');
+  const [activeTab, setActiveTab] = useState('clinics');
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
