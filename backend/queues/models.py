@@ -52,6 +52,7 @@ class Token(models.Model):
     cancelled_at = models.DateTimeField(null=True, blank=True)   # If cancelled
 
     class Meta:
+        db_table = 'Patients'
         ordering = ['position']  # Always order by position
 
     def __str__(self):
