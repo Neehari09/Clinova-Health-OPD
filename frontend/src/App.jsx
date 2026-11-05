@@ -164,10 +164,33 @@ function Dashboard() {
             {/* Right Header Actions */}
             <div className="flex items-center gap-2 sm:gap-3">
 
+              {/* Doctor / Department Selector — visible before Register Patient ONLY in Live OPD Board */}
+              {activeTab === 'board' && queues && queues.length > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100/90 rounded-xl border border-slate-200 shadow-2xs">
+                  <Stethoscope className="w-3.5 h-3.5 text-cyan-700 shrink-0" />
+                  <span className="text-[11px] font-bold text-slate-500 hidden lg:inline">Doctor / Department:</span>
+                  <select
+                    value={selectedQueueId || ''}
+                    onChange={(e) => setSelectedQueueId(Number(e.target.value))}
+                    className="bg-transparent text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer max-w-[150px] sm:max-w-[210px] truncate"
+                    title="Select Doctor / Department"
+                  >
+                    {queues.map((q) => {
+                      const cleanName = (q.name || '').replace(/\s*\((?:Room|Lab)[^)]*\)/gi, '').trim();
+                      return (
+                        <option key={q.id} value={q.id}>
+                          {cleanName} ({q.room})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              )}
+
               {/* + Register Patient Button */}
               <button
                 onClick={() => setIsPatientModalOpen(true)}
-                className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer shrink-0"
               >
                 <PlusCircle className="w-4 h-4 stroke-[2.2]" />
                 <span>Register Patient</span>

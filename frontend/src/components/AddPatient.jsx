@@ -154,11 +154,14 @@ export default function AddPatient({ isOpen, onClose }) {
                             required
                             className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-cyan-500 bg-white"
                         >
-                            {queues.map((q) => (
-                                <option key={q.id} value={q.id}>
-                                    {q.name} ({q.room})
-                                </option>
-                            ))}
+                            {queues.map((q) => {
+                                const cleanName = (q.name || '').replace(/\s*\((?:Room|Lab)[^)]*\)/gi, '').trim();
+                                return (
+                                    <option key={q.id} value={q.id}>
+                                        {cleanName} ({q.room})
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
 
