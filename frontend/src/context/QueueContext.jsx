@@ -361,4 +361,10 @@ export const QueueProvider = ({ children }) => {
     );
 };
 
-export const useQueue = () => useContext(QueueContext);
+export const useQueue = () => {
+    const context = useContext(QueueContext);
+    if (!context) {
+        throw new Error('useQueue must be used within a QueueProvider');
+    }
+    return context;
+};

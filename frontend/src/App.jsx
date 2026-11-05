@@ -31,6 +31,7 @@ import Login from './components/Login';
 import { getDoctorAvatar, getFirstLetter, getInitialColor } from './utils/avatarUtils';
 
 function Dashboard() {
+  const queueContext = useQueue();
   const {
     currentUser,
     logout,
@@ -46,7 +47,7 @@ function Dashboard() {
     cancelToken,
     completeActiveConsultation,
     analytics
-  } = useQueue();
+  } = queueContext || {};
 
   const [activeTab, setActiveTab] = useState('clinics');
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
