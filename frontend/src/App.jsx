@@ -104,26 +104,26 @@ function Dashboard() {
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-20 sm:pb-8 overflow-x-hidden w-full">
 
       {/* 1. Responsive Hospital Header with Glassmorphism & Status */}
-      <header className="glass-panel sticky top-0 z-30 shadow-xs transition-all bg-white/95">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-18 gap-3 sm:gap-6 flex-nowrap">
+      <header className="glass-panel sticky top-0 z-30 shadow-xs transition-all bg-white/95 border-b border-slate-200/90">
+        <div className="w-full px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-4 flex-nowrap">
 
-            {/* Hospital Logo: Option 3 Stethoscope & Heart Rhythm (Fixed No-Shrink) */}
-            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-              <StethoscopeHeartLogo size={40} />
+            {/* Left: Hospital Logo */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <StethoscopeHeartLogo size={38} />
               <div className="min-w-0">
-                <h1 className="text-sm sm:text-base lg:text-lg font-black text-slate-900 leading-tight tracking-tight flex items-center gap-1 whitespace-nowrap">
+                <h1 className="text-sm sm:text-base font-black text-slate-900 leading-tight tracking-tight flex items-center gap-1 whitespace-nowrap">
                   <span>Clinova</span>
                   <span className="text-teal-600">Health</span>
                 </h1>
-                <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap hidden sm:block">
+                <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap hidden md:block">
                   Smart OPD & Patient Flow System
                 </p>
               </div>
             </div>
 
-            {/* Desktop Navigation Tabs (Only on Large Screens >= 1024px to prevent overlapping) */}
-            <nav className="hidden lg:flex items-center gap-1 bg-slate-100/90 p-1 rounded-2xl border border-slate-200/80 shrink-0">
+            {/* Center: Desktop Navigation Tabs (Visible on screens >= 1150px) */}
+            <nav className="hidden min-[1150px]:flex items-center gap-1 bg-slate-100/90 p-1 rounded-2xl border border-slate-200/80 shrink-0">
               <button
                 onClick={() => setActiveTab('clinics')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
@@ -161,18 +161,18 @@ function Dashboard() {
               </button>
             </nav>
 
-            {/* Right Header Actions with Adaptive Responsiveness */}
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+            {/* Right: Actions, Doctor Selector, Register Button, and Profile */}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 ml-auto">
 
-              {/* Doctor / Department Selector — visible before Register Patient ONLY in Live OPD Board */}
+              {/* Doctor / Department Selector — visible ONLY in Live OPD Board */}
               {activeTab === 'board' && queues && queues.length > 0 && (
-                <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-white rounded-xl border border-slate-200/90 shadow-xs ring-1 ring-slate-100">
-                  <Stethoscope className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-700 shrink-0" />
-                  <span className="text-[11px] font-extrabold text-slate-500 hidden xl:inline">Doctor / Department:</span>
+                <div className="flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 bg-white rounded-xl border border-slate-200/90 shadow-2xs">
+                  <Stethoscope className="w-3.5 h-3.5 text-cyan-700 shrink-0" />
+                  <span className="text-[10px] font-bold text-slate-500 hidden 2xl:inline">Doctor:</span>
                   <select
                     value={selectedQueueId || ''}
                     onChange={(e) => setSelectedQueueId(Number(e.target.value))}
-                    className="bg-transparent text-[11px] sm:text-xs font-bold text-slate-800 focus:outline-hidden cursor-pointer max-w-[110px] sm:max-w-[180px] md:max-w-[240px] truncate"
+                    className="bg-transparent text-[11px] font-bold text-slate-800 focus:outline-hidden cursor-pointer max-w-[110px] sm:max-w-[150px] md:max-w-[190px] truncate"
                     title="Select Doctor / Department"
                   >
                     {queues.map((q) => {
@@ -187,10 +187,10 @@ function Dashboard() {
                 </div>
               )}
 
-              {/* + Register Patient Button (Responsive icon on mobile, full text on tablet+) */}
+              {/* + Register Patient Button */}
               <button
                 onClick={() => setIsPatientModalOpen(true)}
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer shrink-0"
+                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer shrink-0"
               >
                 <PlusCircle className="w-4 h-4 stroke-[2.2]" />
                 <span className="hidden sm:inline">Register Patient</span>
@@ -198,23 +198,23 @@ function Dashboard() {
               </button>
 
               {/* Staff Profile Dropdown: Neehari Soule (Staff ID CN1021) */}
-              <div className="relative pl-1 sm:pl-2 border-l border-slate-200">
+              <div className="relative pl-1 sm:pl-2 border-l border-slate-200 shrink-0">
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="flex items-center gap-2 py-1 px-1.5 sm:px-2 rounded-xl hover:bg-slate-100 transition cursor-pointer select-none"
+                  className="flex items-center gap-1.5 sm:gap-2 py-1 px-1 sm:px-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer select-none"
                 >
                   <img
                     src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80"
                     alt="Neehari Soule"
-                    className="w-8 h-8 sm:w-8.5 sm:h-8.5 rounded-full object-cover border border-slate-200 shadow-2xs"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-slate-200 shadow-2xs shrink-0"
                   />
-                  <span className="text-xs font-bold text-slate-800 hidden sm:inline">Neehari S.</span>
+                  <span className="text-xs font-bold text-slate-800 hidden sm:inline truncate max-w-[80px]">Neehari S.</span>
                   <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-slate-200/90 p-3 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-3 z-50">
                     <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 mb-2">
                       <img
                         src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80"
