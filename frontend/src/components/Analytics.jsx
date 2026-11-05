@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQueue } from '../context/QueueContext';
 import {
+    Zap,
+    TrendingUp,
+    ShieldCheck,
     Clock,
     Users,
-    TrendingDown,
-    AlertOctagon,
     Calendar,
     Download,
-    FileText
+    ChevronRight,
+    Activity,
+    Search,
+    Stethoscope,
+    ArrowLeft,
+    Pill
 } from 'lucide-react';
 
 import {
@@ -24,7 +30,6 @@ import {
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
 
-// Register Chart.js components
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -38,28 +43,432 @@ ChartJS.register(
 );
 
 export default function Analytics() {
-    const { activeQueue, analytics } = useQueue();
+    const { activeQueue, analytics, queues, tokens } = useQueue();
     const [filter, setFilter] = useState('today');
+    const [viewMode, setViewMode] = useState('dashboard'); // 'dashboard' | 'detail'
+    const [selectedMetric, setSelectedMetric] = useState('consultations'); // 'wait' | 'consultations' | 'density'
+    const [deptFilter, setDeptFilter] = useState('ALL'); // 'ALL' | 'PED' | 'ORT' | 'CARD' | 'GP' | 'LAB'
+    const [searchQuery, setSearchQuery] = useState('');
 
-    // 1. Line Chart: Hourly Patient Footfall & Rush Hours (Requirement 8)
+    // Dynamic Automatic Dates calculation
+    const dates = useMemo(() => {
+        const now = new Date();
+        const formatDate = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const todayStr = formatDate(now);
+
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = formatDate(yesterday);
+
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 6);
+        const weekStr = `${formatDate(weekAgo)} - ${todayStr}`;
+
+        return { todayStr, yesterdayStr, weekStr };
+    }, []);
+
+    // Department-Wise Average Wait Times (Option 2)
+    const deptWaitAverages = useMemo(() => [
+        { code: 'GP', name: 'General Physician', doctor: 'Dr. Srikanth', avgWait: '6.2', statusText: 'Smooth Flow', tagColor: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+        { code: 'PED', name: 'Pediatrics', doctor: 'Dr. Anita', avgWait: '7.8', statusText: 'Fast Moving', tagColor: 'text-purple-700 bg-purple-50 border-purple-200' },
+        { code: 'ORT', name: 'Orthopedics', doctor: 'Dr. Ashwin', avgWait: '9.5', statusText: 'Mobility Checks', tagColor: 'text-blue-700 bg-blue-50 border-blue-200' },
+        { code: 'CARD', name: 'Cardiology', doctor: 'Dr. Rajesh Verma', avgWait: '11.8', statusText: 'ECG & Vitals', tagColor: 'text-rose-700 bg-rose-50 border-rose-200' },
+        { code: 'LAB', name: 'Pathology & Lab', doctor: 'Dr. Ajay Sharma', avgWait: '4.1', statusText: 'Rapid Tests', tagColor: 'text-amber-700 bg-amber-50 border-amber-200' },
+    ], []);
+
+    // Total waiting patients across ALL doctors (0 if empty)
+    const totalHospitalWaitingCount = useMemo(() => {
+        const count = queues.reduce((acc, q) => acc + (q.waiting_count || 0), 0);
+        return count;
+    }, [queues]);
+
+    // All currently waiting patients across all queues
+    const allHospitalWaitingPatients = useMemo(() => {
+        const list = [];
+        queues.forEach((q) => {
+            const isPed = (q.name || '').toLowerCase().includes('pediatric');
+            const isOrt = (q.name || '').toLowerCase().includes('orthopedic');
+            const isCard = (q.name || '').toLowerCase().includes('cardio');
+            const isGp = (q.name || '').toLowerCase().includes('general') || (q.name || '').toLowerCase().includes('srikanth');
+            const deptCode = isPed ? 'PED' : isOrt ? 'ORT' : isCard ? 'CARD' : isGp ? 'GP' : 'LAB';
+
+            if (q.waiting_tokens && q.waiting_tokens.length > 0) {
+                q.waiting_tokens.forEach((t, idx) => {
+                    // Extract live registered time from notes (e.g., 'Reg: 05:38:15 PM') or createdAt
+                    let regTime = 'Waiting Now';
+                    if (t.notes && t.notes.includes('Reg:')) {
+                        regTime = t.notes.split('Reg:')[1].trim();
+                    } else if (t.createdAt) {
+                        const d = new Date(t.createdAt);
+                        regTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    }
+
+                    list.push({
+                        token: t.tokenNumber || `${deptCode}${String(idx + 1).padStart(2, '0')}`,
+                        name: `${t.patientName}`,
+                        ageGender: `${t.age || 30} ${t.gender || 'M'}`,
+                        deptCode: deptCode,
+                        attendedTime: regTime,
+                        prescription: 'Awaiting Consultation & Doctor Examination',
+                        doctor: q.name,
+                        room: q.room,
+                        status: 'WAITING'
+                    });
+                });
+            }
+        });
+
+        if (list.length === 0 && tokens && tokens.length > 0) {
+            tokens.filter(t => t.status === 'WAITING').forEach((t, idx) => {
+                const code = t.token_number?.replace(/[0-9#]/g, '') || 'GP';
+                let regTime = 'Waiting Now';
+                if (t.notes && t.notes.includes('Reg:')) {
+                    regTime = t.notes.split('Reg:')[1].trim();
+                } else if (t.created_at) {
+                    const d = new Date(t.created_at);
+                    regTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                }
+
+                list.push({
+                    token: t.token_number || `${code}${String(idx + 1).padStart(2, '0')}`,
+                    name: `${t.patient_name}`,
+                    ageGender: `${t.age} ${t.gender}`,
+                    deptCode: code,
+                    attendedTime: regTime,
+                    prescription: 'Awaiting Consultation in Hall',
+                    doctor: activeQueue?.name || 'General OPD',
+                    room: activeQueue?.room || 'OPD Desk',
+                    status: 'WAITING'
+                });
+            });
+        }
+        return list;
+    }, [queues, tokens, activeQueue]);
+
+    // Master List of 131 Completed Consultations:
+    // With Dr. Ajay Sharma (Pathology & Lab)
+    // Continuous tokens from 01, unique 131 Indian names, age/gender, attended time, and department prescriptions
+    const completedConsultationsList = useMemo(() => {
+        const unique131IndianNames = [
+            'Aarav', 'Ananya', 'Rudransh', 'Kavya', 'Aditya', 'Pooja', 'Sai Teja', 'Sunita', 'Rohan', 'Eshwar',
+            'Tarun', 'Vikas', 'Meera', 'Priya', 'Divya', 'Sneha', 'Kartik', 'Deepak', 'Kunal', 'Varun',
+            'Sanjay', 'Ajay', 'Sachin', 'Harish', 'Praveen', 'Alok', 'Mohit',
+            'Rakesh', 'Manish', 'Gaurav', 'Nikhil', 'Neha', 'Komal', 'Ritu', 'Swati', 'Shreya', 'Anjali',
+            'Tanvi', 'Payal', 'Bhavna', 'Ashish', 'Chetan', 'Dinesh', 'Girish', 'Hemant', 'Jitendra', 'Lalit',
+            'Manoj', 'Nitin', 'Pradeep', 'Rahul', 'Sandip', 'Tushar',
+            'Umesh', 'Vipul', 'Yogesh', 'Amit', 'Bhupesh', 'Chirag', 'Devendra', 'Gagan', 'Inder', 'Jayant',
+            'Kapil', 'Lokendra', 'Mayank', 'Naval', 'Omkar', 'Pankaj', 'Rajiv', 'Sumit', 'Tejas', 'Utkarsh',
+            'Vivek', 'Yash', 'Abhinav', 'Brijesh', 'Chandan', 'Darshan',
+            'Gopal', 'Harshit', 'Ishwar', 'Jagdish', 'Kailash', 'Lokesh', 'Madhav', 'Nirmal', 'Pramod', 'Rohit',
+            'Satish', 'Trilok', 'Uday', 'Vinod', 'Anup', 'Bharat', 'Charan', 'Dhanush', 'Eknath', 'Govind',
+            'Himanshu', 'Jatin', 'Kamal', 'Lakshman', 'Mahesh', 'Naresh',
+            'Prashant', 'Ramesh', 'Shankar', 'Tarunendra', 'Upendra', 'Vijay', 'Anirudh', 'Balram', 'Chandresh', 'Devang',
+            'Giridhar', 'Hardik', 'Jayesh', 'Kishore', 'Manav', 'Nirav', 'Parth', 'Rajendra', 'Shravan', 'Tanmay',
+            'Vatsal', 'Yuvraj', 'Ashok', 'Bhavesh', 'Chinmay', 'Deepesh'
+        ];
+
+        const depts = [
+            {
+                code: 'PED',
+                doctor: 'Dr. Anita (Pediatrics)',
+                room: 'Room 104',
+                prefix: 'PED',
+                ageBase: 4,
+                rxList: [
+                    'Pediatric Vitals Checked & Drops Prescribed',
+                    'Oral Rehydration & Paracetamol Syrup Prescribed',
+                    'Immunization Recorded & Review in 1 Month'
+                ],
+                count: 27
+            },
+            {
+                code: 'ORT',
+                doctor: 'Dr. Ashwin (Orthopedics)',
+                room: 'Room 101',
+                prefix: 'ORT',
+                ageBase: 42,
+                rxList: [
+                    'X-Ray Evaluated & Pain Relief Gel Prescribed',
+                    'Physiotherapy Recommended & Review in 7 Days',
+                    'Calcium & Vitamin D3 Supplements Issued'
+                ],
+                count: 26
+            },
+            {
+                code: 'CARD',
+                doctor: 'Dr. Rajesh Verma (Cardiology)',
+                room: 'Room 205',
+                prefix: 'CARD',
+                ageBase: 54,
+                rxList: [
+                    'ECG Normal — Blood Pressure Medication Adjusted',
+                    'Lipid Profile Advised & Pharmacy Order Sent',
+                    'Echocardiogram Review Completed & Low Sodium Diet Prescribed'
+                ],
+                count: 26
+            },
+            {
+                code: 'GP',
+                doctor: 'Dr. Srikanth (General Physician)',
+                room: 'Room 201',
+                prefix: 'GP',
+                ageBase: 32,
+                rxList: [
+                    'Antibiotic Course & Follow-up in 3 Days',
+                    'Routine Vitals Checked & Rest Advised',
+                    'Antacid & Fever Medication Issued'
+                ],
+                count: 26
+            },
+            {
+                code: 'LAB',
+                doctor: 'Dr. Ajay Sharma (Pathology & Lab)',
+                room: 'Lab 1',
+                prefix: 'LAB',
+                ageBase: 38,
+                rxList: [
+                    'Blood Sample Analyzed — CBC & Platelet Report Ready',
+                    'Thyroid Profile Processed & Digital Copy Sent',
+                    'Fasting Glucose & HbA1c Sample Collected'
+                ],
+                count: 26
+            }
+        ];
+
+        const list = [];
+        let nameCounter = 0;
+
+        depts.forEach((dept) => {
+            for (let num = 1; num <= dept.count; num++) {
+                const uniqueName = unique131IndianNames[nameCounter] || `Patient-${num}`;
+                nameCounter++;
+                const rx = dept.rxList[(num - 1) % dept.rxList.length];
+                const tokenFormatted = `${dept.prefix}${String(num).padStart(2, '0')}`;
+                
+                // Realistic sequential time attended between 08:30 AM and 02:45 PM
+                const totalMinutes = 8 * 60 + 30 + ((num * 11) % 360);
+                const hour24 = Math.floor(totalMinutes / 60);
+                const minute = totalMinutes % 60;
+                const ampm = hour24 >= 12 ? 'PM' : 'AM';
+                const hour12 = hour24 > 12 ? hour24 - 12 : hour24;
+                const timeString = `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+
+                // Age and gender
+                const age = dept.code === 'PED' ? (2 + (num % 9)) : (dept.ageBase + (num % 22));
+                const gender = (num % 3 === 0) ? 'F' : 'M';
+
+                list.push({
+                    token: tokenFormatted,
+                    name: uniqueName,
+                    ageGender: `${age} ${gender}`,
+                    deptCode: dept.code,
+                    attendedTime: timeString,
+                    prescription: rx,
+                    doctor: dept.doctor,
+                    room: dept.room,
+                    status: 'COMPLETED'
+                });
+            }
+        });
+
+        return list;
+    }, []);
+
+    // Distinct Dataset for Date Filter
+    const currentViewData = useMemo(() => {
+        if (filter === 'yesterday') {
+            return {
+                label: 'Yesterday',
+                avgWait: '9.4',
+                totalConsultations: 88,
+                waitingDensity: '0 (Shift Closed)',
+                peakTime: '11:00 AM',
+                waitTrend: '+0.8 mins vs Last Week',
+                isTrendGood: false,
+                lineLabels: ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM'],
+                arrivals: [6, 14, 21, 19, 13, 8, 12, 10, 6, 2],
+                consulted: [5, 12, 19, 18, 14, 8, 11, 11, 6, 2],
+            };
+        } else if (filter === 'week') {
+            return {
+                label: 'This Week',
+                avgWait: '7.9',
+                totalConsultations: 542,
+                waitingDensity: '12 Avg Daily',
+                peakTime: 'Mon & Wed 10 AM',
+                waitTrend: '-1.6 mins vs Last Week',
+                isTrendGood: true,
+                lineLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                arrivals: [95, 88, 102, 79, 91, 65, 22],
+                consulted: [92, 85, 98, 77, 89, 64, 22],
+            };
+        } else {
+            return {
+                label: 'Today',
+                avgWait: analytics.avgWaitMinutes || '8.4',
+                totalConsultations: (analytics.completedTokensList?.length || 0) + completedConsultationsList.length,
+                waitingDensity: `${totalHospitalWaitingCount} Waiting`,
+                peakTime: '10:30 AM',
+                waitTrend: '-2.1 mins vs Yesterday',
+                isTrendGood: true,
+                lineLabels: ['8 AM', '9 AM', '10 AM', '10:30', '11:30', '1 PM', '2:30', '4 PM', '6 PM'],
+                arrivals: [4, 12, 18, 22, 19, 11, 14, 9, 3],
+                consulted: [3, 10, 16, 20, 18, 12, 13, 9, 4],
+            };
+        }
+    }, [filter, analytics, totalHospitalWaitingCount, completedConsultationsList]);
+
+    // Active Metric Details Setup
+    const activeData = useMemo(() => {
+        let title = '';
+        let subtitle = '';
+        let icon = Users;
+        let color = 'text-teal-600';
+        let rawRecords = [];
+
+        if (selectedMetric === 'consultations') {
+            const dynamicCompleted = (analytics.completedTokensList || []).map(r => ({
+                ...r,
+                deptCode: r.token.includes('PED') ? 'PED' : r.token.includes('ORT') ? 'ORT' : r.token.includes('CARD') ? 'CARD' : r.token.includes('LAB') ? 'LAB' : 'GP'
+            }));
+            const combinedCompleted = [...completedConsultationsList, ...dynamicCompleted];
+            
+            // Sort by Department and Token Number
+            const sortedCompleted = [...combinedCompleted].sort((a, b) => {
+                const deptOrder = { PED: 1, ORT: 2, CARD: 3, GP: 4, LAB: 5 };
+                const orderA = deptOrder[a.deptCode] || 99;
+                const orderB = deptOrder[b.deptCode] || 99;
+                if (orderA !== orderB) return orderA - orderB;
+
+                const numA = parseInt(a.token.replace(/\D/g, ''), 10) || 0;
+                const numB = parseInt(b.token.replace(/\D/g, ''), 10) || 0;
+                return numA - numB;
+            });
+
+            title = 'Completed Consultations Audit (All Doctors)';
+            subtitle = `All attended patients who completed consultation (${sortedCompleted.length} patients). Continuous consecutive tokens starting from 01.`;
+            icon = Users;
+            color = 'text-teal-600';
+            rawRecords = sortedCompleted;
+        } else if (selectedMetric === 'density') {
+            title = 'Live Hospital OPD Waiting Queue (All Doctors)';
+            subtitle = allHospitalWaitingPatients.length > 0
+                ? `Real-time breakdown of all patients waiting for consultation across doctor queues (${allHospitalWaitingPatients.length} waiting).`
+                : 'No patients currently waiting in the OPD queue.';
+            icon = Activity;
+            color = 'text-cyan-600';
+            rawRecords = allHospitalWaitingPatients;
+        } else {
+            // 'wait'
+            title = 'Department-Wise Average Wait Times';
+            subtitle = 'Comparison of patient waiting times across each hospital department and clinic.';
+            icon = Clock;
+            color = 'text-cyan-600';
+            rawRecords = completedConsultationsList;
+        }
+
+        // Apply Department Filter
+        let filteredByDept = rawRecords;
+        if (deptFilter !== 'ALL') {
+            filteredByDept = rawRecords.filter(r => r.deptCode === deptFilter);
+        }
+
+        // Apply Search
+        const filteredRecords = filteredByDept.filter((item) => {
+            if (!searchQuery.trim()) return true;
+            const q = searchQuery.toLowerCase().trim();
+            return (
+                (item.name || '').toLowerCase().includes(q) ||
+                (item.token || '').toLowerCase().includes(q) ||
+                (item.doctor || '').toLowerCase().includes(q) ||
+                (item.prescription || '').toLowerCase().includes(q)
+            );
+        });
+
+        return {
+            title,
+            subtitle,
+            icon,
+            color,
+            records: filteredRecords,
+            totalCount: filteredByDept.length,
+            unfilteredCount: rawRecords.length
+        };
+    }, [selectedMetric, deptFilter, completedConsultationsList, allHospitalWaitingPatients, analytics.completedTokensList, searchQuery]);
+
+    const openDetailPage = (metric) => {
+        setSelectedMetric(metric);
+        setDeptFilter('ALL');
+        setSearchQuery('');
+        setViewMode('detail');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const backToDashboard = () => {
+        setViewMode('dashboard');
+        setSearchQuery('');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const exportCSV = () => {
+        const escapeCSV = (val) => {
+            const str = String(val ?? '').replace(/"/g, '""');
+            return `"${str}"`;
+        };
+
+        const rows = [];
+        rows.push(['Token #', 'Patient Name', 'Age / Gender', 'Department / Doctor', selectedMetric === 'density' ? 'Registered Time' : 'Attended Time', 'Prescription / Rx Issued', 'Status'].map(escapeCSV).join(','));
+
+        if (activeData.records && activeData.records.length > 0) {
+            activeData.records.forEach((r) => {
+                rows.push([
+                    escapeCSV(r.token),
+                    escapeCSV(r.name),
+                    escapeCSV(r.ageGender || ''),
+                    escapeCSV(r.doctor || activeQueue?.name || 'Clinova OPD'),
+                    escapeCSV(r.attendedTime || ''),
+                    escapeCSV(r.prescription || ''),
+                    escapeCSV(r.status)
+                ].join(','));
+            });
+        }
+
+        rows.push('');
+        rows.push(['--- CLINICAL METRIC SUMMARY ---', '', '', '', '', '', ''].join(','));
+        rows.push([escapeCSV('Active View'), escapeCSV(activeData.title), '', '', '', '', ''].join(','));
+        rows.push([escapeCSV('Time Period'), escapeCSV(currentViewData.label), '', '', '', '', ''].join(','));
+        rows.push([escapeCSV('Overall Hospital Avg Wait'), escapeCSV(`${currentViewData.avgWait} mins`), '', '', '', '', ''].join(','));
+
+        const csvString = '\uFEFF' + rows.join('\r\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Clinova_OPD_${selectedMetric}_${deptFilter}_${filter}_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     const lineData = {
-        labels: ['8 AM', '9 AM', '10 AM', '10:30 AM', '11:30 AM', '1 PM', '2:30 PM', '4 PM', '6 PM'],
+        labels: currentViewData.lineLabels,
         datasets: [
             {
-                label: 'Patients Arrived / Hour',
-                data: [4, 12, 18, 22, 19, 11, 14, 9, 3],
-                borderColor: '#0891b2', // Cyan
-                backgroundColor: 'rgba(8, 145, 178, 0.15)',
+                label: 'Arrivals',
+                data: currentViewData.arrivals,
+                borderColor: '#0891b2',
+                backgroundColor: 'rgba(8, 145, 178, 0.12)',
                 tension: 0.4,
                 fill: true,
                 pointBackgroundColor: '#0891b2',
                 pointRadius: 4,
             },
             {
-                label: 'Patients Consulted',
-                data: [3, 10, 16, 20, 18, 12, 13, 9, 4],
-                borderColor: '#10b981', // Green
-                borderDash: [4, 4],
+                label: 'Consulted',
+                data: currentViewData.consulted,
+                borderColor: '#10b981',
+                borderDash: [3, 3],
                 tension: 0.3,
                 fill: false,
                 pointRadius: 3,
@@ -71,234 +480,536 @@ export default function Analytics() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+            legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
         },
         scales: {
-            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-            x: { grid: { display: false } },
+            y: { beginAtZero: true, grid: { color: '#f8fafc' }, ticks: { font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0 } },
         },
     };
 
-    // 2. Bar Chart: Wait-Time Distribution (Requirement 8)
-    const barData = {
-        labels: ['< 10 mins', '10 - 20 mins', '> 20 mins'],
+    const deptBarData = {
+        labels: ['General Physician', 'Pediatrics', 'Orthopedics', 'Cardiology', 'Pathology Lab'],
         datasets: [
             {
-                label: '% of Patients',
-                data: [68, 22, 10],
-                backgroundColor: ['#0891b2', '#06b6d4', '#f59e0b'],
+                label: 'Avg Wait (mins)',
+                data: [6.2, 7.8, 9.5, 11.8, 4.1],
+                backgroundColor: ['#10b981', '#a855f7', '#3b82f6', '#f43f5e', '#f59e0b'],
                 borderRadius: 8,
             },
         ],
     };
 
-    const barOptions = {
+    const deptBarOptions = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
             y: {
                 beginAtZero: true,
-                max: 100,
-                ticks: { callback: (v) => `${v}%` },
-                grid: { color: '#f1f5f9' }
+                max: 15,
+                ticks: { callback: (v) => `${v}m`, font: { size: 10 } },
+                grid: { color: '#f8fafc' }
             },
-            x: { grid: { display: false } },
+            x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 0 } },
         },
     };
 
-    return (
-        <div className="space-y-6">
+    // =========================================================================
+    // DEDICATED SEPARATE FULL-PAGE VIEW
+    // =========================================================================
+    if (viewMode === 'detail') {
+        const IconComponent = activeData.icon;
+        return (
+            <div className="space-y-5 animate-in fade-in duration-200">
+                {/* Dedicated Top Action Bar */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={backToDashboard}
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition active:scale-95 cursor-pointer shrink-0"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Back to Analytics Dashboard</span>
+                        </button>
+                        <div className="h-6 w-px bg-slate-200 hidden sm:block"></div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-9 h-9 rounded-xl bg-cyan-50 flex items-center justify-center shrink-0">
+                                <IconComponent className={`w-5 h-5 ${activeData.color}`} />
+                            </div>
+                            <div>
+                                <h2 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                                    {activeData.title}
+                                </h2>
+                                <p className="text-xs text-slate-500">
+                                    {activeData.subtitle}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
-            {/* Title & Date Filter Bar */}
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            onClick={exportCSV}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer"
+                        >
+                            <Download className="w-4 h-4" />
+                            <span>Export View as CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* 5 Department Average Wait Stat Cards (Shown in Wait-Time detail view) */}
+                {selectedMetric === 'wait' && (
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        {deptWaitAverages.map((dept) => (
+                            <div
+                                key={dept.code}
+                                onClick={() => setDeptFilter(dept.code)}
+                                className={`p-3.5 rounded-xl border transition-all cursor-pointer bg-white hover:shadow-md ${
+                                    deptFilter === dept.code ? 'border-2 border-cyan-500 ring-2 ring-cyan-500/20 shadow-xs' : 'border-slate-200'
+                                }`}
+                            >
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    {dept.name}
+                                </div>
+                                <div className="text-xs text-slate-500 font-semibold">{dept.doctor}</div>
+                                <div className="text-2xl font-black text-slate-900 mt-0.5">
+                                    {dept.avgWait} <span className="text-xs font-semibold text-slate-500">mins</span>
+                                </div>
+                                <div className={`inline-block mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold border ${dept.tagColor}`}>
+                                    {dept.statusText}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Sub-header Navigation Tabs */}
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto text-xs font-bold">
+                    <button
+                        onClick={() => { setSelectedMetric('consultations'); setSearchQuery(''); }}
+                        className={`px-4 py-2 rounded-xl transition cursor-pointer shrink-0 flex items-center gap-2 ${
+                            selectedMetric === 'consultations'
+                                ? 'bg-teal-600 text-white shadow-xs'
+                                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                        }`}
+                    >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Total Consultations ({completedConsultationsList.length})</span>
+                    </button>
+
+                    <button
+                        onClick={() => { setSelectedMetric('density'); setSearchQuery(''); }}
+                        className={`px-4 py-2 rounded-xl transition cursor-pointer shrink-0 flex items-center gap-2 ${
+                            selectedMetric === 'density'
+                                ? 'bg-cyan-600 text-white shadow-xs'
+                                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                        }`}
+                    >
+                        <Activity className="w-3.5 h-3.5" />
+                        <span>OPD Waiting ({allHospitalWaitingPatients.length} Waiting)</span>
+                    </button>
+
+                    <button
+                        onClick={() => { setSelectedMetric('wait'); setSearchQuery(''); }}
+                        className={`px-4 py-2 rounded-xl transition cursor-pointer shrink-0 flex items-center gap-2 ${
+                            selectedMetric === 'wait'
+                                ? 'bg-cyan-600 text-white shadow-xs'
+                                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                        }`}
+                    >
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>Department Wait Times</span>
+                    </button>
+                </div>
+
+                {/* Department Grouping Filter Bar */}
+                <div className="bg-slate-50/90 rounded-2xl border border-slate-200/80 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider mr-1">
+                            Filter By Department:
+                        </span>
+
+                        <button
+                            onClick={() => setDeptFilter('ALL')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                deptFilter === 'ALL'
+                                    ? 'bg-slate-900 text-white shadow-xs'
+                                    : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200'
+                            }`}
+                        >
+                            All ({activeData.unfilteredCount})
+                        </button>
+
+                        <button
+                            onClick={() => setDeptFilter('GP')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                deptFilter === 'GP'
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'bg-white text-emerald-700 hover:bg-emerald-50 border border-emerald-200'
+                            }`}
+                        >
+                            <span>🩺 GP (Dr. Srikanth)</span>
+                        </button>
+
+                        <button
+                            onClick={() => setDeptFilter('PED')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                deptFilter === 'PED'
+                                    ? 'bg-purple-600 text-white shadow-xs'
+                                    : 'bg-white text-purple-700 hover:bg-purple-50 border border-purple-200'
+                            }`}
+                        >
+                            <span>👶 Pediatrics (Dr. Anita)</span>
+                        </button>
+
+                        <button
+                            onClick={() => setDeptFilter('ORT')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                deptFilter === 'ORT'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-200'
+                            }`}
+                        >
+                            <span>🦴 Orthopedics (Dr. Ashwin)</span>
+                        </button>
+
+                        <button
+                            onClick={() => setDeptFilter('CARD')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                deptFilter === 'CARD'
+                                    ? 'bg-rose-600 text-white shadow-xs'
+                                    : 'bg-white text-rose-700 hover:bg-rose-50 border border-rose-200'
+                            }`}
+                        >
+                            <span>❤️ Cardiology (Dr. Rajesh Verma)</span>
+                        </button>
+
+                        <button
+                            onClick={() => setDeptFilter('LAB')}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                                deptFilter === 'LAB'
+                                    ? 'bg-amber-600 text-white shadow-xs'
+                                    : 'bg-white text-amber-700 hover:bg-amber-50 border border-amber-200'
+                            }`}
+                        >
+                            <span>🔬 Pathology Lab (Dr. Ajay Sharma)</span>
+                        </button>
+                    </div>
+
+                    {/* Search Input Bar */}
+                    <div className="relative w-full sm:w-72 shrink-0">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <Search className="w-4 h-4" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search name, token, prescription..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-medium focus:outline-hidden focus:ring-2 focus:ring-cyan-500 shadow-2xs"
+                        />
+                    </div>
+                </div>
+
+                {/* Updated Table: Token #, Patient Name, Age / Gender, Department / Doctor, Attended Time, Prescription / Rx Issued, Status */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
+                    <div className="p-3 sm:px-6 border-b border-slate-100 flex items-center justify-between bg-white text-xs">
+                        <span className="font-bold text-slate-600">
+                            Showing: <strong className="text-slate-900 font-extrabold">{activeData.records.length}</strong> of {activeData.totalCount} records in this view
+                        </span>
+                        {deptFilter !== 'ALL' && (
+                            <span className="text-[11px] font-bold text-slate-400">
+                                Sequential Token Sequence: 01, 02, 03, 04, 05...
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Table View */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs min-w-[750px]">
+                            <thead>
+                                <tr className="border-b border-slate-200/70 text-slate-400 font-bold uppercase tracking-wider bg-slate-50/60 text-[11px]">
+                                    <th className="py-3.5 px-4">Token #</th>
+                                    <th className="py-3.5 px-4">Patient Name</th>
+                                    <th className="py-3.5 px-4">Age / Gender</th>
+                                    <th className="py-3.5 px-4">Department / Doctor</th>
+                                    <th className="py-3.5 px-4">{selectedMetric === 'density' ? 'Registered Time' : 'Attended Time'}</th>
+                                    <th className="py-3.5 px-4">Prescription / Rx Issued</th>
+                                    <th className="py-3.5 px-4 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {activeData.records.length > 0 ? (
+                                    activeData.records.map((r, idx) => {
+                                        const isPed = r.deptCode === 'PED';
+                                        const isOrt = r.deptCode === 'ORT';
+                                        const isCard = r.deptCode === 'CARD';
+                                        const isGp = r.deptCode === 'GP';
+                                        const badgeColor = isPed
+                                            ? 'bg-purple-100 text-purple-800 border-purple-300'
+                                            : isOrt
+                                            ? 'bg-blue-100 text-blue-800 border-blue-300'
+                                            : isCard
+                                            ? 'bg-rose-100 text-rose-800 border-rose-300'
+                                            : isGp
+                                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                            : 'bg-amber-100 text-amber-800 border-amber-300';
+
+                                        return (
+                                            <tr key={idx} className="hover:bg-cyan-50/40 transition-colors">
+                                                <td className="py-3.5 px-4">
+                                                    <span className={`inline-block px-2.5 py-1 rounded-lg font-black text-xs tracking-wider border shadow-2xs ${badgeColor}`}>
+                                                        {r.token}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3.5 px-4 font-bold text-slate-800 text-[13px]">{r.name}</td>
+                                                <td className="py-3.5 px-4 font-bold text-slate-600">
+                                                    <span className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px]">
+                                                        {r.ageGender}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3.5 px-4 text-slate-600 font-medium">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Stethoscope className="w-3.5 h-3.5 text-cyan-600 shrink-0" />
+                                                        <span>{r.doctor}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3.5 px-4 font-bold text-slate-700">
+                                                    <div className="flex items-center gap-1 text-[11px]">
+                                                        <Clock className="w-3 h-3 text-cyan-600" />
+                                                        <span>{r.attendedTime}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3.5 px-4">
+                                                    <div className="flex items-center gap-1.5 text-slate-800 font-medium max-w-md">
+                                                        <Pill className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                                                        <span className="truncate">{r.prescription}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3.5 px-4 text-right">
+                                                    <span className="px-2.5 py-1 rounded-full font-extrabold text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                        {r.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                ) : (
+                                    <tr>
+                                        <td colSpan="7" className="py-12 text-center text-slate-400">
+                                            {selectedMetric === 'density'
+                                                ? 'No patients currently waiting in the OPD queue. Register a patient to see them in this waiting list.'
+                                                : `No matching patient found for "${searchQuery}".`}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // =========================================================================
+    // MAIN ANALYTICS DASHBOARD VIEW
+    // =========================================================================
+    return (
+        <div className="space-y-4 sm:space-y-6">
+
+            {/* Title & Filter Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
                         Hospital OPD Analytics & Wait Times
                     </h2>
-                    <p className="text-xs text-slate-500">
-                        Real-time clinical insights for: <strong className="text-slate-700">{activeQueue.name}</strong>
+                    <p className="text-[11px] sm:text-xs text-slate-500 truncate max-w-xs sm:max-w-md">
+                        Comprehensive clinical analytics for: <strong className="text-slate-700">All Doctor Queues</strong>
                     </p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-xs">
-                        <Calendar className="w-3.5 h-3.5 text-cyan-600" />
+                <div className="flex items-center gap-2 self-start sm:self-auto w-full sm:w-auto">
+                    <div className="flex-1 sm:flex-initial flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 shadow-xs">
+                        <Calendar className="w-4 h-4 text-cyan-600 shrink-0" />
                         <select
                             value={filter}
                             onChange={(e) => setFilter(e.target.value)}
-                            className="bg-transparent focus:outline-hidden cursor-pointer"
+                            className="bg-transparent focus:outline-hidden cursor-pointer w-full text-xs font-semibold"
                         >
-                            <option value="today">Today: Aug 25, 2025</option>
-                            <option value="yesterday">Yesterday</option>
-                            <option value="week">This Week</option>
+                            <option value="today">Today: {dates.todayStr}</option>
+                            <option value="yesterday">Yesterday: {dates.yesterdayStr}</option>
+                            <option value="week">This Week: {dates.weekStr}</option>
                         </select>
                     </div>
 
                     <button
-                        onClick={() => alert('Exporting clinical audit CSV...')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-semibold text-xs shadow-xs transition active:scale-95 cursor-pointer"
+                        onClick={exportCSV}
+                        className="flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-600/20 transition active:scale-95 cursor-pointer shrink-0"
                     >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Export CSV</span>
+                        <Download className="w-4 h-4" />
+                        <span className="hidden sm:inline">Export CSV</span>
+                        <span className="sm:hidden">CSV</span>
                     </button>
                 </div>
             </div>
 
-            {/* 4 KPI Metric Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 3 KPI Metric Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
 
-                {/* Card 1: Avg Wait Time */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-                    <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                        <span>Avg Patient Wait Time</span>
-                        <Clock className="w-4 h-4 text-cyan-600" />
+                {/* Card 1: Department-Wise Wait Times Card */}
+                <button
+                    type="button"
+                    onClick={() => openDetailPage('wait')}
+                    className="text-left rounded-2xl p-5 bg-white border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-cyan-400 transition-all duration-200 cursor-pointer group"
+                >
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        <span>Avg Wait Time</span>
+                        <Clock className="w-4 h-4 text-slate-400 group-hover:text-cyan-600 transition" />
                     </div>
-                    <div className="text-3xl font-black text-slate-900 mt-1">
-                        {analytics.avgWaitMinutes} <span className="text-sm font-semibold text-slate-500">mins</span>
+                    <div className="flex items-baseline justify-between mt-1">
+                        <div className="text-3xl font-black text-slate-900">
+                            {currentViewData.avgWait} <span className="text-xs font-semibold text-slate-500">mins (Hospital)</span>
+                        </div>
                     </div>
-                    <div className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <TrendingDown className="w-3 h-3" />
-                        <span>-2.1 mins vs hospital SLA</span>
+
+                    <div className="mt-2.5 flex items-center gap-1.5 flex-wrap text-[10px] font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">GP: 6.2m</span>
+                        <span className="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200">PED: 7.8m</span>
+                        <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">ORT: 9.5m</span>
+                        <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">CARD: 11.8m</span>
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">LAB: 4.1m</span>
                     </div>
-                </div>
+
+                    <div className="mt-3 text-[11px] text-cyan-600 font-bold flex items-center justify-between border-t border-slate-100 pt-2">
+                        <span>View Department-Wise Wait Times</span>
+                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+                    </div>
+                </button>
 
                 {/* Card 2: Total Consultations */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-                    <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                <button
+                    type="button"
+                    onClick={() => openDetailPage('consultations')}
+                    className="text-left rounded-2xl p-5 bg-white border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-teal-400 transition-all duration-200 cursor-pointer group"
+                >
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
                         <span>Total Consultations</span>
-                        <Users className="w-4 h-4 text-teal-600" />
+                        <Users className="w-4 h-4 text-slate-400 group-hover:text-teal-600 transition" />
                     </div>
                     <div className="text-3xl font-black text-slate-900 mt-1">
-                        {analytics.totalServedCount} <span className="text-sm font-semibold text-slate-500">Patients</span>
+                        {currentViewData.totalConsultations} <span className="text-xs font-semibold text-slate-500">Patients</span>
                     </div>
-                    <div className="text-[11px] text-teal-700 font-semibold mt-2">
-                        94% of OPD shift completed
+                    <div className="text-xs text-teal-700 font-semibold mt-2">
+                        {filter === 'today' ? '100% Completed consultations' : `${currentViewData.label} Summary`}
                     </div>
-                </div>
+                    <div className="mt-3 text-[11px] text-teal-600 font-bold flex items-center justify-between border-t border-slate-100 pt-2">
+                        <span>View all {currentViewData.totalConsultations} patients (Separate Page)</span>
+                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
+                    </div>
+                </button>
 
-                {/* Card 3: Current Queue Length */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-                    <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                        <span>Current OPD Queue</span>
-                        <Users className="w-4 h-4 text-cyan-600" />
+                {/* Card 3: OPD Queue Density */}
+                <button
+                    type="button"
+                    onClick={() => openDetailPage('density')}
+                    className="text-left rounded-2xl p-5 bg-white border border-slate-200/90 shadow-sm hover:shadow-lg hover:border-cyan-400 transition-all duration-200 cursor-pointer group"
+                >
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        <span>OPD Queue Density (All Doctors)</span>
+                        <Activity className="w-4 h-4 text-slate-400 group-hover:text-cyan-600 transition" />
                     </div>
                     <div className="text-3xl font-black text-slate-900 mt-1">
-                        {analytics.waitingCount} <span className="text-sm font-semibold text-slate-500">Waiting</span>
+                        {totalHospitalWaitingCount} <span className="text-xs font-semibold text-slate-500">Waiting</span>
                     </div>
-                    <div className="text-[11px] text-cyan-700 font-semibold mt-2">
-                        Normal waiting density
+                    <div className="text-xs text-cyan-700 font-semibold mt-2">
+                        Across all 5 Doctor Clinics
                     </div>
-                </div>
-
-                {/* Card 4: Diverted / Cancelled */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-                    <div className="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                        <span>Diverted / Cancelled</span>
-                        <AlertOctagon className="w-4 h-4 text-rose-500" />
+                    <div className="mt-3 text-[11px] text-cyan-600 font-bold flex items-center justify-between border-t border-slate-100 pt-2">
+                        <span>View waiting patients (Separate Page)</span>
+                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
                     </div>
-                    <div className="text-3xl font-black text-slate-900 mt-1">
-                        {analytics.cancelledCount} <span className="text-sm font-semibold text-slate-500">Patients</span>
-                    </div>
-                    <div className="text-[11px] text-rose-600 font-semibold mt-2">
-                        2.3% rate (ICU / Emergency)
-                    </div>
-                </div>
+                </button>
 
             </div>
 
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Responsive Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 
-                {/* Line Chart: Rush Hours */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+                {/* Line Chart */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-3">
                         <div>
-                            <h3 className="font-bold text-sm text-slate-900">
-                                Hourly Patient Footfall & Rush Hours
+                            <h3 className="font-extrabold text-sm sm:text-base text-slate-900">
+                                {filter === 'week' ? 'Daily Patient Volume (This Week)' : 'Hourly Patient Arrivals & Consultations'}
                             </h3>
-                            <p className="text-xs text-slate-400">Arrival curve between 8:00 AM – 6:00 PM</p>
+                            <p className="text-xs text-slate-400">
+                                {filter === 'week' ? 'Monday to Sunday patient volume' : 'Arrivals vs Completed consultations'}
+                            </p>
                         </div>
-                        <span className="text-xs px-2 py-0.5 rounded-lg bg-cyan-50 text-cyan-700 font-bold border border-cyan-100">
-                            Peak: 10:30 AM
+                        <span className="text-xs px-2.5 py-1 rounded-lg bg-cyan-50 text-cyan-700 font-bold border border-cyan-100">
+                            Peak: {currentViewData.peakTime}
                         </span>
                     </div>
-                    <div className="h-64 w-full">
+                    <div className="h-56 sm:h-64 w-full">
                         <Line data={lineData} options={lineOptions} />
                     </div>
+
+                    {/* Point 3: Hourly Doctor Clearance Rate / Efficiency Metric Strip */}
+                    <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        
+                        {/* 1. Clearance Rate */}
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 shadow-2xs">
+                            <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+                                <Zap className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Clearance Rate</div>
+                                <div className="text-lg font-black text-emerald-950 leading-tight">92%</div>
+                                <div className="text-[10px] text-emerald-700 font-medium truncate">Arrivals attended on schedule</div>
+                            </div>
+                        </div>
+
+                        {/* 2. Busiest Hour */}
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 shadow-2xs">
+                            <div className="w-9 h-9 rounded-lg bg-amber-500 flex items-center justify-center text-white shrink-0 shadow-xs">
+                                <TrendingUp className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-800">Busiest Hour</div>
+                                <div className="text-lg font-black text-amber-950 leading-tight">10:30 AM</div>
+                                <div className="text-[10px] text-amber-700 font-medium truncate">22 Patient Arrivals</div>
+                            </div>
+                        </div>
+
+                        {/* 3. Fastest Clearance Hour */}
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-cyan-50/70 border border-cyan-200/80 shadow-2xs">
+                            <div className="w-9 h-9 rounded-lg bg-cyan-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+                                <ShieldCheck className="w-5 h-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-cyan-800">Fastest Clearance</div>
+                                <div className="text-lg font-black text-cyan-950 leading-tight">1:00 PM</div>
+                                <div className="text-[10px] text-cyan-700 font-medium truncate">100% Attended (0 backlog)</div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
 
-                {/* Bar Chart: Wait Distribution */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-                    <h3 className="font-bold text-sm text-slate-900 mb-1">
-                        Wait-Time Distribution
+                {/* Department Wait-Time Comparison Bar Chart */}
+                <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm">
+                    <h3 className="font-extrabold text-sm sm:text-base text-slate-900 mb-0.5">
+                        Department Wait Times
                     </h3>
-                    <p className="text-xs text-slate-400 mb-3">Target SLA: Under 15 minutes</p>
-                    <div className="h-64 w-full">
-                        <Bar data={barData} options={barOptions} />
+                    <p className="text-xs text-slate-400 mb-3">Average wait per clinic (mins)</p>
+                    <div className="h-56 sm:h-64 w-full">
+                        <Bar data={deptBarData} options={deptBarOptions} />
                     </div>
                 </div>
 
-            </div>
-
-            {/* Audit Log Table */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                    <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-slate-400" />
-                        <h3 className="font-bold text-sm text-slate-800">
-                            Recent Consultations Audit Log
-                        </h3>
-                    </div>
-                    <span className="text-xs text-slate-400 font-medium">Logged today</span>
-                </div>
-
-                <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                        <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase bg-slate-50/30">
-                            <th className="py-2.5 px-4">Token #</th>
-                            <th className="py-2.5 px-4">Patient Name</th>
-                            <th className="py-2.5 px-4">Wait Duration</th>
-                            <th className="py-2.5 px-4">Consultation Time</th>
-                            <th className="py-2.5 px-4 text-right">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        <tr>
-                            <td className="py-2.5 px-4 font-bold text-slate-800">#MED-098</td>
-                            <td className="py-2.5 px-4 font-semibold text-slate-700">Hanan Amath (40M)</td>
-                            <td className="py-2.5 px-4 text-slate-600">9 mins wait</td>
-                            <td className="py-2.5 px-4 text-slate-600">11 mins</td>
-                            <td className="py-2.5 px-4 text-right">
-                                <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 text-[11px]">
-                                    COMPLETED
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="py-2.5 px-4 font-bold text-slate-800">#MED-099</td>
-                            <td className="py-2.5 px-4 font-semibold text-slate-700">Jather Dranin (52F)</td>
-                            <td className="py-2.5 px-4 text-slate-600">10 mins wait</td>
-                            <td className="py-2.5 px-4 text-slate-600">13 mins</td>
-                            <td className="py-2.5 px-4 text-right">
-                                <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 text-[11px]">
-                                    COMPLETED
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td className="py-2.5 px-4 font-bold text-slate-800">#MED-100</td>
-                            <td className="py-2.5 px-4 font-semibold text-slate-700">Mather Marrin (23F)</td>
-                            <td className="py-2.5 px-4 text-slate-600">8 mins wait</td>
-                            <td className="py-2.5 px-4 text-slate-600">10 mins</td>
-                            <td className="py-2.5 px-4 text-right">
-                                <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-50 text-emerald-700 text-[11px]">
-                                    COMPLETED
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
 
         </div>

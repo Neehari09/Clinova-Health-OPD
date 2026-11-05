@@ -9,38 +9,38 @@ import {
     ArrowRight,
     Building2
 } from 'lucide-react';
+import { getDoctorAvatar } from '../utils/avatarUtils';
 
 export default function Clinics({ onOpenQueue, onOpenAddQueue }) {
     const { queues, tokens } = useQueue();
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Calculate live waiting count for each doctor's queue
     const getWaitingCount = (queueId) => {
         return tokens.filter((t) => t.queueId === queueId && t.status === 'WAITING').length;
     };
 
     const filtered = queues.filter((q) =>
-        q.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        q.department.toLowerCase().includes(searchTerm.toLowerCase())
+        (q.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (q.department || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
 
-            {/* Header & Create Queue Button */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Responsive Header Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                    <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
                         Manage Clinic & Consultation Queues
                     </h2>
-                    <p className="text-xs text-slate-500">
-                        Monitor doctor consultation rooms, waiting hall density, and launch live triage boards.
+                    <p className="text-[11px] sm:text-xs text-slate-500">
+                        Monitor doctor rooms, waiting density, and launch live triage boards.
                     </p>
                 </div>
 
                 <button
                     onClick={onOpenAddQueue}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs shadow-xs transition active:scale-95 cursor-pointer self-start sm:self-auto"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold text-xs shadow-md shadow-teal-600/20 transition active:scale-95 cursor-pointer"
                 >
                     <Plus className="w-4 h-4 stroke-[2.5]" />
                     <span>Create New Doctor Queue</span>
@@ -48,7 +48,7 @@ export default function Clinics({ onOpenQueue, onOpenAddQueue }) {
             </div>
 
             {/* Search Bar */}
-            <div className="relative max-w-sm">
+            <div className="relative w-full sm:max-w-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                     <Search className="w-3.5 h-3.5" />
                 </div>
@@ -57,78 +57,96 @@ export default function Clinics({ onOpenQueue, onOpenAddQueue }) {
                     placeholder="Search by doctor, department, or room..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs focus:outline-hidden focus:ring-2 focus:ring-cyan-500 shadow-xs"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 bg-white text-xs focus:outline-hidden focus:ring-2 focus:ring-cyan-500 shadow-xs"
                 />
             </div>
 
-            {/* Doctor Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* Doctor Cards Grid with Doctor Portraits Only */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filtered.map((q) => {
-                    const count = getWaitingCount(q.id);
-                    const queueWaitingTokens = tokens.filter((t) => t.queueId === q.id && t.status === 'WAITING');
+                    const count = q.waiting_count !== undefined ? q.waiting_count : getWaitingCount(q.id);
+                    const queueWaitingTokens = (q.waiting_tokens && q.waiting_tokens.length > 0)
+                        ? q.waiting_tokens
+                        : tokens.filter((t) => (t.queueId === q.id || t.queue === q.id) && t.status === 'WAITING');
+                    const doctorAvatar = getDoctorAvatar(q.name, q.id);
 
                     return (
                         <div
                             key={q.id}
-                            className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between group"
+                            className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-xl hover:border-cyan-200 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden"
                         >
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-400/5 rounded-full blur-xl pointer-events-none group-hover:bg-cyan-400/10 transition-colors" />
+
                             <div>
-                                {/* Status Badges */}
+                                {/* Badges & Doctor Avatar */}
                                 <div className="flex items-center justify-between mb-3">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                        Active
-                                    </span>
-                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                                    <div className="flex items-center gap-2.5">
+                                        <img
+                                            src={doctorAvatar}
+                                            alt={q.name}
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80';
+                                            }}
+                                            className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md ring-1 ring-slate-200 shrink-0"
+                                        />
+                                        <div>
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                Active
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
                                         {q.room}
                                     </span>
                                 </div>
 
-                                {/* Queue / Doctor Name */}
-                                <h3 className="font-bold text-sm text-slate-900 group-hover:text-cyan-700 transition">
+                                {/* Queue Name */}
+                                <h3 className="font-extrabold text-sm sm:text-base text-slate-900 group-hover:text-cyan-700 transition-colors line-clamp-1">
                                     {q.name}
                                 </h3>
-                                <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
-                                    <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                                    <span>{q.department}</span>
+                                <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
+                                    <Building2 className="w-3.5 h-3.5 text-cyan-600" />
+                                    <span className="font-medium text-slate-500">{q.department}</span>
                                 </div>
 
-                                {/* Waiting & Avg Wait Stats */}
-                                <div className="grid grid-cols-2 gap-2 my-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-2 gap-2.5 my-4 p-3 rounded-xl bg-slate-50/90 border border-slate-100">
                                     <div>
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase">
-                                            In Queue
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                            Patients Waiting
                                         </div>
-                                        <div className="text-base font-black text-slate-800 flex items-center gap-1 mt-0.5">
-                                            <Users className="w-3.5 h-3.5 text-cyan-600" />
-                                            {count} Patients
+                                        <div className="text-base font-black text-slate-900 flex items-center gap-1.5 mt-0.5">
+                                            <Users className="w-4 h-4 text-cyan-600" />
+                                            {count}
                                         </div>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                             Avg Wait
                                         </div>
-                                        <div className="text-base font-black text-slate-800 flex items-center gap-1 mt-0.5">
-                                            <Clock className="w-3.5 h-3.5 text-amber-500" />
+                                        <div className="text-base font-black text-slate-900 flex items-center gap-1.5 mt-0.5">
+                                            <Clock className="w-4 h-4 text-amber-500" />
                                             {q.avgWait || '5m'}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Next in Line Preview */}
+                                {/* Clean Patient List Pills (No patient images, clean badges only) */}
                                 <div className="mb-4">
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                                        Next in Line
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                                        Patient List
                                     </div>
                                     {queueWaitingTokens.length > 0 ? (
-                                        <div className="space-y-1">
-                                            {queueWaitingTokens.slice(0, 2).map((t) => (
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {queueWaitingTokens.slice(0, 3).map((t) => (
                                                 <div
                                                     key={t.id}
-                                                    className="flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-slate-50 border border-slate-100"
+                                                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-xs font-bold text-slate-700 shadow-2xs"
                                                 >
-                                                    <span className="font-semibold text-slate-700">{t.patientName}</span>
-                                                    <span className="font-bold text-slate-500 text-[11px]">{t.tokenNumber}</span>
+                                                    <span className="text-[10px] text-slate-400">👤</span>
+                                                    <span className="truncate max-w-[100px]">{t.patientName}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -140,13 +158,12 @@ export default function Clinics({ onOpenQueue, onOpenAddQueue }) {
                                 </div>
                             </div>
 
-                            {/* Action Button */}
                             <button
                                 onClick={() => onOpenQueue(q.id)}
-                                className="w-full mt-2 py-2 px-3 rounded-xl bg-cyan-50 hover:bg-cyan-600 text-cyan-700 hover:text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 group-hover:bg-cyan-600 group-hover:text-white cursor-pointer"
+                                className="w-full mt-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-50 to-teal-50 group-hover:from-cyan-600 group-hover:to-teal-600 text-cyan-700 group-hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-2 border border-cyan-200/60 group-hover:border-transparent group-hover:shadow-md group-hover:shadow-cyan-600/20 active:scale-98 cursor-pointer"
                             >
-                                <span>Open Live Queue</span>
-                                <ArrowRight className="w-3.5 h-3.5" />
+                                <span>Open Queue</span>
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                             </button>
                         </div>
                     );
@@ -156,4 +173,3 @@ export default function Clinics({ onOpenQueue, onOpenAddQueue }) {
         </div>
     );
 }
-

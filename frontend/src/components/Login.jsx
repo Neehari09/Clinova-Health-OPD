@@ -4,7 +4,7 @@ import { Activity, Lock, Mail, ShieldCheck } from 'lucide-react';
 
 export default function Login() {
     const { login } = useQueue();
-    const [email, setEmail] = useState('nurse@citycare.org');
+    const [email, setEmail] = useState('CN1021');
     const [password, setPassword] = useState('password123');
     const [remember, setRemember] = useState(true);
 
@@ -22,10 +22,10 @@ export default function Login() {
                     <Activity className="w-8 h-8 stroke-[2.2]" />
                 </div>
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-                    City Care Hospital
+                    Clinova Health
                 </h2>
                 <p className="text-xs font-semibold uppercase tracking-wider text-cyan-600 mt-0.5">
-                    MediQueue — OPD Staff Portal
+                    Smart OPD & Patient Flow System
                 </p>
             </div>
 
@@ -59,7 +59,7 @@ export default function Login() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-hidden focus:ring-2 focus:ring-cyan-500"
-                                    placeholder="nurse@citycare.org"
+                                    placeholder="CN1021"
                                 />
                             </div>
                         </div>

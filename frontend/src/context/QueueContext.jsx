@@ -6,9 +6,9 @@ const QueueContext = createContext(null);
 export const QueueProvider = ({ children }) => {
     // 1. Staff Authentication State
     const [currentUser, setCurrentUser] = useState({
-        name: 'Nurse Priya',
-        email: 'nurse@citycare.org',
-        station: 'OPD Desk 1',
+        name: 'Neehari Soule',
+        email: 'CN1021',
+        station: 'OPD Department Desk 1',
         isLoggedIn: true,
     });
 
@@ -16,10 +16,29 @@ export const QueueProvider = ({ children }) => {
     const [queues, setQueues] = useState([]);
     const [selectedQueueId, setSelectedQueueId] = useState(null);
 
-    // 3. Tokens List
+    // 3. Tokens List & Persistent Completed Consultations
     const [tokens, setTokens] = useState([]);
+    const [completedTokensList, setCompletedTokensList] = useState(() => {
+        try {
+            const saved = localStorage.getItem('clinova_completed_consultations');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+    const [completedCount, setCompletedCount] = useState(() => 131 + completedTokensList.length);
 
-    // Fetch queues from Django API on mount
+    // Keep completed consultations permanently synced to localStorage
+    useEffect(() => {
+        try {
+            localStorage.setItem('clinova_completed_consultations', JSON.stringify(completedTokensList));
+            setCompletedCount(131 + completedTokensList.length);
+        } catch (e) {
+            console.error('Failed to sync completed consultations to localStorage:', e);
+        }
+    }, [completedTokensList]);
+
+    // Fetch queues and all completed tokens from Django API on mount
     const fetchQueues = async () => {
         try {
             const res = await queueApi.getQueues();
@@ -28,6 +47,20 @@ export const QueueProvider = ({ children }) => {
                 if (!selectedQueueId) {
                     setSelectedQueueId(res.data[0].id);
                 }
+            }
+
+            // Sync all completed tokens from backend DB so they never vanish
+            try {
+                const compRes = await queueApi.getAllCompleted();
+                if (compRes.data && compRes.data.length > 0) {
+                    setCompletedTokensList((prev) => {
+                        const existingTokens = new Set(prev.map(p => p.token));
+                        const incoming = compRes.data.filter(t => !existingTokens.has(t.token));
+                        return [...prev, ...incoming];
+                    });
+                }
+            } catch (errComp) {
+                console.warn('Could not fetch backend completed tokens:', errComp);
             }
         } catch (err) {
             console.warn('Backend offline or fetching failed, using fallback data:', err);
@@ -58,9 +91,9 @@ export const QueueProvider = ({ children }) => {
     // Auth Functions
     const login = (email) => {
         setCurrentUser({
-            name: 'Nurse Priya',
-            email: email || 'nurse@citycare.org',
-            station: 'OPD Desk 1',
+            name: 'Neehari Soule',
+            email: email || 'CN1021',
+            station: 'OPD Department Desk 1',
             isLoggedIn: true,
         });
     };
@@ -82,7 +115,6 @@ export const QueueProvider = ({ children }) => {
             setSelectedQueueId(res.data.id);
         } catch (err) {
             console.error('Error creating queue in backend:', err);
-            // Local fallback
             const fallback = {
                 id: Date.now(),
                 name,
@@ -95,26 +127,34 @@ export const QueueProvider = ({ children }) => {
         }
     };
 
-    // Requirement 3: Add new person / token
-    const addToken = async (patientName, age, gender = 'M', notes = '') => {
-        if (!selectedQueueId) return;
+    // Requirement 3: Add new person / token with EXPLICIT user-assigned token number
+    const addToken = async (patientName, age, gender = 'M', notes = '', targetQueueId = null, tokenNumber = '') => {
+        const qId = targetQueueId || selectedQueueId;
+        if (!qId) return;
         try {
             const payload = {
                 patient_name: patientName,
+                token_number: tokenNumber,
                 age: Number(age) || 30,
                 gender,
                 notes,
             };
-            const res = await queueApi.addToken(selectedQueueId, payload);
-            setTokens((prev) => [...prev, res.data]);
+            const res = await queueApi.addToken(qId, payload);
+            if (qId === selectedQueueId) {
+                setTokens((prev) => [...prev, res.data]);
+            }
+            await fetchQueues();
+            return res.data;
         } catch (err) {
             console.error('Error adding token in backend:', err);
-            // Local fallback
+            const targetQ = queues.find(q => q.id === qId);
+            const dept = (targetQ?.department || '').toLowerCase();
+            const prefix = dept.includes('ped') ? 'PED' : dept.includes('card') ? 'CARD' : dept.includes('ortho') ? 'ORT' : dept.includes('diag') || dept.includes('path') ? 'LAB' : 'GP';
             const nextPos = tokens.length + 1;
             const fallbackToken = {
                 id: Date.now(),
-                queue: selectedQueueId,
-                token_number: `#MED-${Date.now().toString().slice(-3)}`,
+                queue: qId,
+                token_number: tokenNumber || `${prefix}28`,
                 patient_name: patientName,
                 age: Number(age) || 30,
                 gender,
@@ -122,13 +162,15 @@ export const QueueProvider = ({ children }) => {
                 position: nextPos,
                 status: 'WAITING',
             };
-            setTokens((prev) => [...prev, fallbackToken]);
+            if (qId === selectedQueueId) {
+                setTokens((prev) => [...prev, fallbackToken]);
+            }
+            return fallbackToken;
         }
     };
 
-    // Requirement 5: Move Token Up (Priority Triage)
+    // Requirement 5: Move Token Up
     const moveTokenUp = async (tokenId) => {
-        // Optimistic UI update
         setTokens((prev) => {
             const waiting = [...prev].sort((a, b) => a.position - b.position);
             const idx = waiting.findIndex((t) => t.id === tokenId);
@@ -175,11 +217,10 @@ export const QueueProvider = ({ children }) => {
         }
     };
 
-    // Requirement 6: Assign Top Token for Service (Single Button Click)
+    // Requirement 6: Assign Top Token for Service
     const serveNext = async (queueId = selectedQueueId) => {
         try {
             const res = await queueApi.serveNext(queueId);
-            // Refresh waiting list and active queue details
             fetchTokens(queueId);
             fetchQueues();
         } catch (err) {
@@ -193,13 +234,34 @@ export const QueueProvider = ({ children }) => {
         try {
             await queueApi.cancelToken(tokenId);
             fetchTokens(selectedQueueId);
+            fetchQueues();
         } catch (err) {
             console.error('Error cancelling token in backend:', err);
         }
     };
 
-    const completeActiveConsultation = async (tokenId) => {
-        serveNext(selectedQueueId);
+    // Complete Active Consultation with Selected/Typed Prescription & Exact Attended Time
+    const completeActiveConsultation = async (tokenId, customPrescription = '') => {
+        if (currentlyServing) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+            setCompletedTokensList((prev) => [
+                {
+                    token: currentlyServing.tokenNumber,
+                    name: currentlyServing.patientName,
+                    ageGender: `${currentlyServing.age} ${currentlyServing.gender}`,
+                    doctor: activeQueue?.name || 'General OPD',
+                    room: activeQueue?.room || 'Room 101',
+                    attendedTime: timeStr,
+                    prescription: customPrescription || 'Rx Generated & Pharmacy Order Dispatched',
+                    status: 'COMPLETED'
+                },
+                ...prev
+            ]);
+        }
+        setCompletedCount((prev) => prev + 1);
+        await serveNext(selectedQueueId);
     };
 
     // Active Queue
@@ -208,8 +270,8 @@ export const QueueProvider = ({ children }) => {
             queues.find((q) => q.id === selectedQueueId) ||
             queues[0] || {
                 id: 1,
-                name: 'Dr. Sharma - General Medicine (Room 101)',
-                room: 'Room 101',
+                name: 'Dr. Srikanth - General Physician (Room 201)',
+                room: 'Room 201',
             }
         );
     }, [queues, selectedQueueId]);
@@ -243,15 +305,21 @@ export const QueueProvider = ({ children }) => {
         }));
     }, [tokens]);
 
-    // Requirement 8: Analytics
+    // Analytics
     const analytics = useMemo(() => {
+        const totalHospitalWaiting = queues.reduce((acc, q) => {
+            const count = q.waiting_count !== undefined ? q.waiting_count : 0;
+            return acc + count;
+        }, 0);
+
         return {
             avgWaitMinutes: '8.4',
-            totalServedCount: 131,
-            waitingCount: tokens.length,
-            cancelledCount: 3,
+            totalServedCount: completedCount,
+            waitingCount: totalHospitalWaiting,
+            allQueues: queues,
+            completedTokensList: completedTokensList
         };
-    }, [tokens]);
+    }, [queues, tokens, completedCount, completedTokensList]);
 
     return (
         <QueueContext.Provider
@@ -274,6 +342,7 @@ export const QueueProvider = ({ children }) => {
                 cancelToken,
                 completeActiveConsultation,
                 analytics,
+                fetchQueues
             }}
         >
             {children}
@@ -281,8 +350,4 @@ export const QueueProvider = ({ children }) => {
     );
 };
 
-export const useQueue = () => {
-    const context = useContext(QueueContext);
-    if (!context) throw new Error('useQueue must be used within QueueProvider');
-    return context;
-};
+export const useQueue = () => useContext(QueueContext);

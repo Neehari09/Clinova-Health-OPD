@@ -15,6 +15,7 @@ export const queueApi = {
     addToken: (queueId, data) => API.post(`/queues/${queueId}/add_token/`, data),
     serveNext: (queueId) => API.post(`/queues/${queueId}/serve_next/`),
     getAnalytics: (queueId) => API.get(`/queues/${queueId}/analytics/`),
+    getAllCompleted: () => API.get('/queues/all_completed/'),
 
     // Tokens
     moveTokenUp: (tokenId) => API.post(`/tokens/${tokenId}/move_up/`),

@@ -14,6 +14,45 @@ class QueueViewSet(viewsets.ModelViewSet):
     queryset = Queue.objects.all().order_by('-created_at')
     serializer_class = QueueSerializer
 
+    # All Completed Consultations across all queues (never vanish)
+    @action(detail=False, methods=['get'])
+    def all_completed(self, request):
+        from django.utils import timezone
+        completed_tokens = Token.objects.filter(status='COMPLETED').order_by('completed_at')
+        result = []
+        for t in completed_tokens:
+            attended_str = ''
+            if t.completed_at:
+                local_time = timezone.localtime(t.completed_at)
+                attended_str = local_time.strftime('%I:%M %p')
+            elif t.served_at:
+                local_time = timezone.localtime(t.served_at)
+                attended_str = local_time.strftime('%I:%M %p')
+            else:
+                attended_str = timezone.localtime(timezone.now()).strftime('%I:%M %p')
+
+            notes = t.notes or ''
+            rx = ''
+            if 'Rx: ' in notes:
+                rx = notes.split('Rx: ')[-1].split(' | ')[0]
+            elif 'Prescription: ' in notes:
+                rx = notes.split('Prescription: ')[-1].split(' | ')[0]
+            else:
+                rx = 'Rx Generated & Pharmacy Order Dispatched'
+
+            result.append({
+                'id': t.id,
+                'token': t.token_number,
+                'name': t.patient_name,
+                'ageGender': f'{t.age} {t.gender}',
+                'doctor': t.queue.name if t.queue else 'General OPD',
+                'room': t.queue.room if t.queue else 'Room 101',
+                'attendedTime': attended_str,
+                'prescription': rx,
+                'status': 'COMPLETED'
+            })
+        return Response(result)
+
     # Requirement 4: List waiting tokens in this queue
     @action(detail=True, methods=['get'])
     def tokens(self, request, pk=None):
@@ -27,6 +66,7 @@ class QueueViewSet(viewsets.ModelViewSet):
     def add_token(self, request, pk=None):
         queue = self.get_object()
         patient_name = request.data.get('patient_name', '').strip()
+        token_number = request.data.get('token_number', '').strip().upper()
         age = request.data.get('age', 30)
         gender = request.data.get('gender', 'M')
         notes = request.data.get('notes', '')
@@ -39,10 +79,35 @@ class QueueViewSet(viewsets.ModelViewSet):
             max_pos = queue.tokens.filter(status='WAITING').aggregate(Max('position'))['position__max'] or 0
             next_position = max_pos + 1
 
-            # Auto-generate Token Number (e.g. #MED-101)
-            total_tokens = queue.tokens.count() + 101
-            prefix = 'PED' if 'pediatric' in queue.department.lower() else 'LAB' if 'diag' in queue.department.lower() else 'MED'
-            token_number = f"#{prefix}-{total_tokens}"
+            # If user didn't explicitly provide a token number, compute fallback
+            if not token_number:
+                dept = (queue.department or '').lower()
+                name_low = (queue.name or '').lower()
+                if 'pediatric' in dept or 'pediatric' in name_low:
+                    prefix = 'PED'
+                    base_completed_max = 127
+                elif 'diag' in dept or 'pathology' in name_low or 'lab' in name_low:
+                    prefix = 'LAB'
+                    base_completed_max = 126
+                elif 'cardio' in dept or 'cardio' in name_low:
+                    prefix = 'CARD'
+                    base_completed_max = 126
+                elif 'ortho' in dept or 'ortho' in name_low:
+                    prefix = 'ORT'
+                    base_completed_max = 126
+                else:
+                    prefix = 'GP'
+                    base_completed_max = 126
+
+                import re
+                existing_nums = [base_completed_max]
+                for t in queue.tokens.all():
+                    m = re.search(r'\d+', t.token_number or '')
+                    if m:
+                        existing_nums.append(int(m.group()))
+
+                next_num = max(existing_nums) + 1
+                token_number = f"{prefix}{next_num:02d}"
 
             token = Token.objects.create(
                 queue=queue,
