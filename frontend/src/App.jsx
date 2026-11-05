@@ -280,9 +280,10 @@ function Dashboard() {
             {/* KPI Cards Row with Premium Glass & Accent Highlights */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5">
 
-              {/* Card 1: Currently Serving (Spotlight Card) */}
-              <div className="bg-gradient-to-br from-white via-cyan-50/20 to-teal-50/30 rounded-2xl border border-cyan-200/80 p-5 shadow-sm sm:col-span-2 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-400/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none" />
+              {/* Card 1: Currently Serving (Spotlight Card with Dynamic Glow & Pulse) */}
+              <div className="shimmer-card animate-pulse-glow bg-gradient-to-br from-white via-cyan-50/40 to-teal-50/50 rounded-3xl border-2 border-cyan-400/60 p-6 shadow-xl shadow-cyan-500/10 sm:col-span-2 relative overflow-hidden transition-all duration-300">
+                <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-bl from-teal-400/20 via-cyan-400/15 to-transparent rounded-full blur-3xl pointer-events-none animate-float" />
+                <div className="absolute -bottom-10 -left-10 w-36 h-36 bg-emerald-400/15 rounded-full blur-2xl pointer-events-none" />
 
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -397,46 +398,49 @@ function Dashboard() {
                 )}
               </div>
 
-              {/* Card 2: Waiting Patients */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+              {/* Card 2: Waiting Patients (Vibrant Amber Glow) */}
+              <div className="card-hover-lift shimmer-card bg-gradient-to-br from-white via-amber-50/40 to-orange-50/20 rounded-3xl border border-amber-200/90 p-5.5 shadow-sm hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/10 flex flex-col justify-between relative overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-[11px] sm:text-xs font-extrabold text-amber-800 uppercase tracking-wider">
                     Waiting in Hall
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <Clock className="w-4 h-4" />
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/30">
+                    <Clock className="w-5 h-5 stroke-[2.3]" />
                   </div>
                 </div>
                 <div className="my-2">
                   <div className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
                     {waitingTokens.length}
-                    <span className="text-xs sm:text-sm font-bold text-slate-400 ml-1.5">Patients</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-400 ml-1.5">Patients</span>
                   </div>
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
-                  <span>Triage order</span>
-                  <span className="font-bold text-cyan-600">{waitingTokens.filter(t => t.notes?.toLowerCase().includes('urgent')).length} Urgent</span>
+                <div className="flex items-center justify-between text-[11px] text-slate-600 pt-3 border-t border-amber-100">
+                  <span className="font-semibold">Triage order</span>
+                  <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[10px]">
+                    {waitingTokens.filter(t => t.notes?.toLowerCase().includes('urgent')).length} Urgent Priority
+                  </span>
                 </div>
               </div>
 
-              {/* Card 3: Avg Wait Time */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+              {/* Card 3: Avg Wait Time (Emerald Vitality Glow) */}
+              <div className="card-hover-lift shimmer-card bg-gradient-to-br from-white via-emerald-50/40 to-teal-50/20 rounded-3xl border border-emerald-200/90 p-5.5 shadow-sm hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-500/10 flex flex-col justify-between relative overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-[11px] sm:text-xs font-extrabold text-emerald-800 uppercase tracking-wider">
                     Avg Consultation
                   </span>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <Activity className="w-4 h-4" />
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/30">
+                    <Activity className="w-5 h-5 stroke-[2.3]" />
                   </div>
                 </div>
                 <div className="my-2">
                   <div className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
                     {analytics.avgWaitMinutes || '8.4'}
-                    <span className="text-xs sm:text-sm font-bold text-slate-400 ml-1.5">mins</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-slate-400 ml-1.5">mins</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 font-bold pt-2 border-t border-slate-100">
-                  <span>✓ Within Hospital Target</span>
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-bold pt-3 border-t border-emerald-100">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>✓ Optimal Patient Flow</span>
                 </div>
               </div>
 

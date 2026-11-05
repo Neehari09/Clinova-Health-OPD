@@ -73,8 +73,9 @@ export default function Clinics({ onOpenQueue, onOpenAddQueue }) {
                     return (
                         <div
                             key={q.id}
-                            className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-sm hover:shadow-xl hover:border-cyan-200 transition-all duration-200 flex flex-col justify-between group relative overflow-hidden"
+                            className="card-hover-lift shimmer-card bg-gradient-to-b from-white via-white to-slate-50/70 rounded-2xl border border-slate-200/90 p-5.5 shadow-sm hover:border-cyan-400/80 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden"
                         >
+                            <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-bl from-cyan-400/15 via-teal-300/10 to-transparent rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
                             <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-400/5 rounded-full blur-xl pointer-events-none group-hover:bg-cyan-400/10 transition-colors" />
 
                             <div>
