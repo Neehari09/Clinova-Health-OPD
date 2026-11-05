@@ -12,3 +12,4 @@ class Migration(migrations.Migration):
             table='Patients',
         ),
     ]
+
