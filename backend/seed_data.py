@@ -1,7 +1,7 @@
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mediqueue_backend.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Clinova_backend.settings')
 django.setup()
 
 from queues.models import Queue, Token
