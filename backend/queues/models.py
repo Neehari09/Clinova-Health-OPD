@@ -14,6 +14,9 @@ class Queue(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = 'Doctors'
+
     def __str__(self):
         return self.name
 
