@@ -15,6 +15,7 @@ export default function AddPatient({ isOpen, onClose }) {
     const [symptoms, setSymptoms] = useState('');
     const [isUrgent, setIsUrgent] = useState(false);
     const [done, setDone] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Live clock ticker for the registration time input
     useEffect(() => {
@@ -79,8 +80,6 @@ export default function AddPatient({ isOpen, onClose }) {
     }, [deptInfo, isTokenManual, isOpen]);
 
     if (!isOpen) return null;
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
