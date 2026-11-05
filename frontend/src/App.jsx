@@ -104,29 +104,29 @@ function Dashboard() {
     <div className="min-h-screen bg-slate-50 text-slate-800 pb-20 sm:pb-8">
 
       {/* 1. Responsive Hospital Header with Glassmorphism & Status */}
-      <header className="glass-panel sticky top-0 z-30 shadow-xs transition-all">
+      <header className="glass-panel sticky top-0 z-30 shadow-xs transition-all bg-white/95">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20 gap-2">
+          <div className="flex items-center justify-between h-16 sm:h-18 gap-3 sm:gap-6 flex-nowrap">
 
-            {/* Hospital Logo: Option 3 Stethoscope & Heart Rhythm */}
-            <div className="flex items-center gap-3">
-              <StethoscopeHeartLogo size={44} />
-              <div>
-                <h1 className="text-base sm:text-lg font-black text-slate-900 leading-tight tracking-tight flex items-center gap-1">
+            {/* Hospital Logo: Option 3 Stethoscope & Heart Rhythm (Fixed No-Shrink) */}
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+              <StethoscopeHeartLogo size={40} />
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-base lg:text-lg font-black text-slate-900 leading-tight tracking-tight flex items-center gap-1 whitespace-nowrap">
                   <span>Clinova</span>
                   <span className="text-teal-600">Health</span>
                 </h1>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                <p className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap hidden sm:block">
                   Smart OPD & Patient Flow System
                 </p>
               </div>
             </div>
 
-            {/* Desktop Navigation Tabs */}
-            <nav className="hidden md:flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-2xl border border-slate-200/70">
+            {/* Desktop Navigation Tabs (Only on Large Screens >= 1024px to prevent overlapping) */}
+            <nav className="hidden lg:flex items-center gap-1 bg-slate-100/90 p-1 rounded-2xl border border-slate-200/80 shrink-0">
               <button
                 onClick={() => setActiveTab('clinics')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'clinics'
                     ? 'bg-white text-cyan-800 shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'
@@ -138,7 +138,7 @@ function Dashboard() {
 
               <button
                 onClick={() => setActiveTab('board')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'board'
                     ? 'bg-white text-cyan-800 shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'
@@ -150,7 +150,7 @@ function Dashboard() {
 
               <button
                 onClick={() => setActiveTab('analytics')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                   activeTab === 'analytics'
                     ? 'bg-white text-cyan-800 shadow-xs'
                     : 'text-slate-500 hover:text-slate-900'
@@ -162,7 +162,7 @@ function Dashboard() {
             </nav>
 
             {/* Right Header Actions with Adaptive Responsiveness */}
-            <div className="flex items-center gap-2 sm:gap-3 md:ml-4 lg:ml-8 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
 
               {/* Doctor / Department Selector — visible before Register Patient ONLY in Live OPD Board */}
               {activeTab === 'board' && queues && queues.length > 0 && (
