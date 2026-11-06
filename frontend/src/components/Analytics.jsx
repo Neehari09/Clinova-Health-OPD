@@ -199,6 +199,66 @@ export default function Analytics() {
         return list;
     }, []);
 
+    // Full 542 Consultations List for "This Week" view
+    const weekConsultationsList = useMemo(() => {
+        const firstNames = [
+            'Aarav', 'Ananya', 'Rudransh', 'Kavya', 'Aditya', 'Pooja', 'Sai Teja', 'Sunita', 'Rohan', 'Eshwar',
+            'Tarun', 'Vikas', 'Meera', 'Priya', 'Divya', 'Sneha', 'Kartik', 'Deepak', 'Kunal', 'Varun',
+            'Sanjay', 'Ajay', 'Sachin', 'Harish', 'Praveen', 'Alok', 'Mohit', 'Rakesh', 'Manish', 'Gaurav',
+            'Nikhil', 'Neha', 'Komal', 'Ritu', 'Swati', 'Shreya', 'Anjali', 'Tanvi', 'Payal', 'Bhavna',
+            'Ashish', 'Chetan', 'Dinesh', 'Girish', 'Hemant', 'Jitendra', 'Lalit', 'Manoj', 'Nitin', 'Pradeep',
+            'Rahul', 'Sandip', 'Tushar', 'Umesh', 'Vipul', 'Yogesh', 'Amit', 'Bhupesh', 'Chirag', 'Devendra',
+            'Gagan', 'Inder', 'Jayant', 'Kapil', 'Lokendra', 'Mayank', 'Naval', 'Omkar', 'Pankaj', 'Rajiv',
+            'Sumit', 'Tejas', 'Utkarsh', 'Vivek', 'Yash', 'Abhinav', 'Brijesh', 'Chandan', 'Darshan', 'Gopal'
+        ];
+        const lastNames = ['Sharma', 'Reddy', 'Patel', 'Verma', 'Rao', 'Kumar', 'Singh', 'Gupta', 'Mehta', 'Nair'];
+
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const depts = [
+            { code: 'GP', doctor: 'Dr. Srikanth (General Physician)', room: 'Room 201', prefix: 'GP', weight: 125, ageBase: 32, rx: 'Antibiotic Course & Rest Advised' },
+            { code: 'PED', doctor: 'Dr. Anita (Pediatrics)', room: 'Room 104', prefix: 'PED', weight: 110, ageBase: 5, rx: 'Pediatric Vitals Checked & Drops Prescribed' },
+            { code: 'ORT', doctor: 'Dr. Ashwin (Orthopedics)', room: 'Room 101', prefix: 'ORT', weight: 105, ageBase: 44, rx: 'X-Ray Evaluated & Pain Relief Gel Prescribed' },
+            { code: 'CARD', doctor: 'Dr. Rajesh Verma (Cardiology)', room: 'Room 205', prefix: 'CARD', weight: 102, ageBase: 56, rx: 'ECG Normal — Blood Pressure Medication Adjusted' },
+            { code: 'LAB', doctor: 'Dr. Ajay Sharma (Pathology & Lab)', room: 'Lab 1', prefix: 'LAB', weight: 100, ageBase: 36, rx: 'Blood Sample Analyzed — CBC & Platelet Report Ready' }
+        ];
+
+        const list = [];
+        let count = 0;
+        const target = 542;
+
+        depts.forEach((dept) => {
+            const deptTarget = Math.min(dept.weight, target - count);
+            for (let i = 1; i <= deptTarget; i++) {
+                count++;
+                const fn = firstNames[(count * 7) % firstNames.length];
+                const ln = lastNames[(count * 3) % lastNames.length];
+                const day = days[(count * 2) % days.length];
+                const totalMinutes = 8 * 60 + 30 + (i * 7) % 400;
+                const hour24 = Math.floor(totalMinutes / 60);
+                const minute = totalMinutes % 60;
+                const ampm = hour24 >= 12 ? 'PM' : 'AM';
+                const hour12 = hour24 > 12 ? hour24 - 12 : hour24;
+                const timeString = `${day} ${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+                const age = dept.code === 'PED' ? (1 + (i % 9)) : (dept.ageBase + (i % 25));
+                const gender = (i % 2 === 0) ? 'F' : 'M';
+
+                list.push({
+                    token: `${dept.prefix}${String(i).padStart(3, '0')}`,
+                    name: `${fn} ${ln}`,
+                    ageGender: `${age} ${gender}`,
+                    deptCode: dept.code,
+                    attendedTime: timeString,
+                    prescription: dept.rx,
+                    doctor: dept.doctor,
+                    room: dept.room,
+                    status: 'COMPLETED'
+                });
+            }
+        });
+
+        return list;
+    }, []);
+
     // Distinct Dataset for Date Filter
     const currentViewData = useMemo(() => {
         if (filter === 'yesterday') {
@@ -257,7 +317,7 @@ export default function Analytics() {
             if (filter === 'yesterday') {
                 baseList = yesterdayConsultationsList; // 88 patients for Nov 5th Yesterday
             } else if (filter === 'week') {
-                baseList = yesterdayConsultationsList;
+                baseList = weekConsultationsList; // 542 patients for This Week
             } else {
                 // Today: dynamic live consultations starting from 0
                 baseList = (analytics.completedTokensList || []).map(r => ({
@@ -332,7 +392,7 @@ export default function Analytics() {
             totalCount: filteredByDept.length,
             unfilteredCount: rawRecords.length
         };
-    }, [selectedMetric, deptFilter, filter, yesterdayConsultationsList, allHospitalWaitingPatients, analytics.completedTokensList, searchQuery, currentViewData]);
+    }, [selectedMetric, deptFilter, filter, yesterdayConsultationsList, weekConsultationsList, allHospitalWaitingPatients, analytics.completedTokensList, searchQuery, currentViewData]);
 
     const openDetailPage = (metric) => {
         setSelectedMetric(metric);
