@@ -92,8 +92,12 @@ export const QueueProvider = ({ children }) => {
             const saved = localStorage.getItem('clinova_completed_consultations');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                // Filter out any stale test patient like 'Pandu' or legacy single records
+                const filtered = Array.isArray(parsed) ? parsed.filter(p => p.name !== 'Pandu' && !p.token?.includes('GP27')) : [];
+                if (filtered.length >= 6) return filtered;
             }
+            // Always default to today's real 6 morning shift completed patients
+            localStorage.setItem('clinova_completed_consultations', JSON.stringify(initialTodayCompleted));
             return initialTodayCompleted;
         } catch {
             return initialTodayCompleted;
