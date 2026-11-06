@@ -145,133 +145,9 @@ export default function Analytics() {
         return list;
     }, [queues, tokens, activeQueue]);
 
-    // Master List of 131 Completed Consultations:
-    // With Dr. Ajay Sharma (Pathology & Lab)
-    // Continuous tokens from 01, unique 131 Indian names, age/gender, attended time, and department prescriptions
+    // Today's Real Completed Consultations: starts from 0 every day and updates as patients are attended
     const completedConsultationsList = useMemo(() => {
-        const unique131IndianNames = [
-            'Aarav', 'Ananya', 'Rudransh', 'Kavya', 'Aditya', 'Pooja', 'Sai Teja', 'Sunita', 'Rohan', 'Eshwar',
-            'Tarun', 'Vikas', 'Meera', 'Priya', 'Divya', 'Sneha', 'Kartik', 'Deepak', 'Kunal', 'Varun',
-            'Sanjay', 'Ajay', 'Sachin', 'Harish', 'Praveen', 'Alok', 'Mohit',
-            'Rakesh', 'Manish', 'Gaurav', 'Nikhil', 'Neha', 'Komal', 'Ritu', 'Swati', 'Shreya', 'Anjali',
-            'Tanvi', 'Payal', 'Bhavna', 'Ashish', 'Chetan', 'Dinesh', 'Girish', 'Hemant', 'Jitendra', 'Lalit',
-            'Manoj', 'Nitin', 'Pradeep', 'Rahul', 'Sandip', 'Tushar',
-            'Umesh', 'Vipul', 'Yogesh', 'Amit', 'Bhupesh', 'Chirag', 'Devendra', 'Gagan', 'Inder', 'Jayant',
-            'Kapil', 'Lokendra', 'Mayank', 'Naval', 'Omkar', 'Pankaj', 'Rajiv', 'Sumit', 'Tejas', 'Utkarsh',
-            'Vivek', 'Yash', 'Abhinav', 'Brijesh', 'Chandan', 'Darshan',
-            'Gopal', 'Harshit', 'Ishwar', 'Jagdish', 'Kailash', 'Lokesh', 'Madhav', 'Nirmal', 'Pramod', 'Rohit',
-            'Satish', 'Trilok', 'Uday', 'Vinod', 'Anup', 'Bharat', 'Charan', 'Dhanush', 'Eknath', 'Govind',
-            'Himanshu', 'Jatin', 'Kamal', 'Lakshman', 'Mahesh', 'Naresh',
-            'Prashant', 'Ramesh', 'Shankar', 'Tarunendra', 'Upendra', 'Vijay', 'Anirudh', 'Balram', 'Chandresh', 'Devang',
-            'Giridhar', 'Hardik', 'Jayesh', 'Kishore', 'Manav', 'Nirav', 'Parth', 'Rajendra', 'Shravan', 'Tanmay',
-            'Vatsal', 'Yuvraj', 'Ashok', 'Bhavesh', 'Chinmay', 'Deepesh'
-        ];
-
-        const depts = [
-            {
-                code: 'PED',
-                doctor: 'Dr. Anita (Pediatrics)',
-                room: 'Room 104',
-                prefix: 'PED',
-                ageBase: 4,
-                rxList: [
-                    'Pediatric Vitals Checked & Drops Prescribed',
-                    'Oral Rehydration & Paracetamol Syrup Prescribed',
-                    'Immunization Recorded & Review in 1 Month'
-                ],
-                count: 27
-            },
-            {
-                code: 'ORT',
-                doctor: 'Dr. Ashwin (Orthopedics)',
-                room: 'Room 101',
-                prefix: 'ORT',
-                ageBase: 42,
-                rxList: [
-                    'X-Ray Evaluated & Pain Relief Gel Prescribed',
-                    'Physiotherapy Recommended & Review in 7 Days',
-                    'Calcium & Vitamin D3 Supplements Issued'
-                ],
-                count: 26
-            },
-            {
-                code: 'CARD',
-                doctor: 'Dr. Rajesh Verma (Cardiology)',
-                room: 'Room 205',
-                prefix: 'CARD',
-                ageBase: 54,
-                rxList: [
-                    'ECG Normal — Blood Pressure Medication Adjusted',
-                    'Lipid Profile Advised & Pharmacy Order Sent',
-                    'Echocardiogram Review Completed & Low Sodium Diet Prescribed'
-                ],
-                count: 26
-            },
-            {
-                code: 'GP',
-                doctor: 'Dr. Srikanth (General Physician)',
-                room: 'Room 201',
-                prefix: 'GP',
-                ageBase: 32,
-                rxList: [
-                    'Antibiotic Course & Follow-up in 3 Days',
-                    'Routine Vitals Checked & Rest Advised',
-                    'Antacid & Fever Medication Issued'
-                ],
-                count: 26
-            },
-            {
-                code: 'LAB',
-                doctor: 'Dr. Ajay Sharma (Pathology & Lab)',
-                room: 'Lab 1',
-                prefix: 'LAB',
-                ageBase: 38,
-                rxList: [
-                    'Blood Sample Analyzed — CBC & Platelet Report Ready',
-                    'Thyroid Profile Processed & Digital Copy Sent',
-                    'Fasting Glucose & HbA1c Sample Collected'
-                ],
-                count: 26
-            }
-        ];
-
-        const list = [];
-        let nameCounter = 0;
-
-        depts.forEach((dept) => {
-            for (let num = 1; num <= dept.count; num++) {
-                const uniqueName = unique131IndianNames[nameCounter] || `Patient-${num}`;
-                nameCounter++;
-                const rx = dept.rxList[(num - 1) % dept.rxList.length];
-                const tokenFormatted = `${dept.prefix}${String(num).padStart(2, '0')}`;
-                
-                // Realistic sequential time attended between 08:30 AM and 02:45 PM
-                const totalMinutes = 8 * 60 + 30 + ((num * 11) % 360);
-                const hour24 = Math.floor(totalMinutes / 60);
-                const minute = totalMinutes % 60;
-                const ampm = hour24 >= 12 ? 'PM' : 'AM';
-                const hour12 = hour24 > 12 ? hour24 - 12 : hour24;
-                const timeString = `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
-
-                // Age and gender
-                const age = dept.code === 'PED' ? (2 + (num % 9)) : (dept.ageBase + (num % 22));
-                const gender = (num % 3 === 0) ? 'F' : 'M';
-
-                list.push({
-                    token: tokenFormatted,
-                    name: uniqueName,
-                    ageGender: `${age} ${gender}`,
-                    deptCode: dept.code,
-                    attendedTime: timeString,
-                    prescription: rx,
-                    doctor: dept.doctor,
-                    room: dept.room,
-                    status: 'COMPLETED'
-                });
-            }
-        });
-
-        return list;
+        return [];
     }, []);
 
     // Distinct Dataset for Date Filter
@@ -303,20 +179,21 @@ export default function Analytics() {
                 consulted: [92, 85, 98, 77, 89, 64, 22],
             };
         } else {
+            const todayCount = (analytics.completedTokensList?.length || 0);
             return {
                 label: 'Today',
-                avgWait: analytics.avgWaitMinutes || '8.4',
-                totalConsultations: (analytics.completedTokensList?.length || 0) + completedConsultationsList.length,
+                avgWait: todayCount > 0 ? (analytics.avgWaitMinutes || '8.4') : '0.0',
+                totalConsultations: todayCount,
                 waitingDensity: `${totalHospitalWaitingCount} Waiting`,
-                peakTime: '10:30 AM',
-                waitTrend: '-2.1 mins vs Yesterday',
+                peakTime: todayCount > 0 ? '10:30 AM' : 'Shift Active',
+                waitTrend: 'Live Session',
                 isTrendGood: true,
-                lineLabels: ['8 AM', '9 AM', '10 AM', '10:30', '11:30', '1 PM', '2:30', '4 PM', '6 PM'],
-                arrivals: [4, 12, 18, 22, 19, 11, 14, 9, 3],
-                consulted: [3, 10, 16, 20, 18, 12, 13, 9, 4],
+                lineLabels: ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM'],
+                arrivals: [todayCount, 0, 0, 0, 0, 0, 0, 0, 0],
+                consulted: [todayCount, 0, 0, 0, 0, 0, 0, 0, 0],
             };
         }
-    }, [filter, analytics, totalHospitalWaitingCount, completedConsultationsList]);
+    }, [filter, analytics, totalHospitalWaitingCount]);
 
     // Active Metric Details Setup
     const activeData = useMemo(() => {
@@ -329,24 +206,25 @@ export default function Analytics() {
         if (selectedMetric === 'consultations') {
             const dynamicCompleted = (analytics.completedTokensList || []).map(r => ({
                 ...r,
-                deptCode: r.token.includes('PED') ? 'PED' : r.token.includes('ORT') ? 'ORT' : r.token.includes('CARD') ? 'CARD' : r.token.includes('LAB') ? 'LAB' : 'GP'
+                deptCode: r.token?.includes('PED') ? 'PED' : r.token?.includes('ORT') ? 'ORT' : r.token?.includes('CARD') ? 'CARD' : r.token?.includes('LAB') ? 'LAB' : 'GP'
             }));
-            const combinedCompleted = [...completedConsultationsList, ...dynamicCompleted];
             
             // Sort by Department and Token Number
-            const sortedCompleted = [...combinedCompleted].sort((a, b) => {
+            const sortedCompleted = [...dynamicCompleted].sort((a, b) => {
                 const deptOrder = { PED: 1, ORT: 2, CARD: 3, GP: 4, LAB: 5 };
                 const orderA = deptOrder[a.deptCode] || 99;
                 const orderB = deptOrder[b.deptCode] || 99;
                 if (orderA !== orderB) return orderA - orderB;
 
-                const numA = parseInt(a.token.replace(/\D/g, ''), 10) || 0;
-                const numB = parseInt(b.token.replace(/\D/g, ''), 10) || 0;
+                const numA = parseInt(a.token?.replace(/\D/g, '') || '0', 10) || 0;
+                const numB = parseInt(b.token?.replace(/\D/g, '') || '0', 10) || 0;
                 return numA - numB;
             });
 
             title = 'Completed Consultations Audit (All Doctors)';
-            subtitle = `All attended patients who completed consultation (${sortedCompleted.length} patients). Continuous consecutive tokens starting from 01.`;
+            subtitle = sortedCompleted.length > 0
+                ? `All attended patients who completed consultation today (${sortedCompleted.length} patients).`
+                : 'No patients have completed consultation yet today. Register and attend patients to see their completed audit record.';
             icon = Users;
             color = 'text-teal-600';
             rawRecords = sortedCompleted;
@@ -364,7 +242,10 @@ export default function Analytics() {
             subtitle = 'Comparison of patient waiting times across each hospital department and clinic.';
             icon = Clock;
             color = 'text-cyan-600';
-            rawRecords = completedConsultationsList;
+            rawRecords = (analytics.completedTokensList || []).map(r => ({
+                ...r,
+                deptCode: r.token?.includes('PED') ? 'PED' : r.token?.includes('ORT') ? 'ORT' : r.token?.includes('CARD') ? 'CARD' : r.token?.includes('LAB') ? 'LAB' : 'GP'
+            }));
         }
 
         // Apply Department Filter
@@ -597,7 +478,7 @@ export default function Analytics() {
                         }`}
                     >
                         <Users className="w-3.5 h-3.5" />
-                        <span>Total Consultations ({completedConsultationsList.length + (analytics.completedTokensList?.length || 0)})</span>
+                        <span>Total Consultations ({(analytics.completedTokensList?.length || 0)})</span>
                     </button>
 
                     <button

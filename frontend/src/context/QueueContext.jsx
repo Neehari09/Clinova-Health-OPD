@@ -19,22 +19,35 @@ export const QueueProvider = ({ children }) => {
     const [selectedQueueId, setSelectedQueueId] = useState(null);
 
     // 3. Tokens List & Persistent Completed Consultations
+    // Clean daily slate: starts from today's real completed consultations (0 initial)
     const [tokens, setTokens] = useState([]);
+    const getTodayDateString = () => new Date().toISOString().slice(0, 10);
+
     const [completedTokensList, setCompletedTokensList] = useState(() => {
         try {
+            const savedDate = localStorage.getItem('clinova_date');
+            const today = getTodayDateString();
+            if (savedDate !== today) {
+                // New day: clean slate starting fresh from 0
+                localStorage.setItem('clinova_date', today);
+                localStorage.setItem('clinova_completed_consultations', JSON.stringify([]));
+                return [];
+            }
             const saved = localStorage.getItem('clinova_completed_consultations');
             return saved ? JSON.parse(saved) : [];
         } catch {
             return [];
         }
     });
-    const [completedCount, setCompletedCount] = useState(() => 131 + completedTokensList.length);
+    const [completedCount, setCompletedCount] = useState(() => completedTokensList.length);
 
     // Keep completed consultations permanently synced to localStorage
     useEffect(() => {
         try {
+            const today = getTodayDateString();
+            localStorage.setItem('clinova_date', today);
             localStorage.setItem('clinova_completed_consultations', JSON.stringify(completedTokensList));
-            setCompletedCount(131 + completedTokensList.length);
+            setCompletedCount(completedTokensList.length);
         } catch (e) {
             console.error('Failed to sync completed consultations to localStorage:', e);
         }
