@@ -145,9 +145,58 @@ export default function Analytics() {
         return list;
     }, [queues, tokens, activeQueue]);
 
-    // Today's Real Completed Consultations: starts from 0 every day and updates as patients are attended
-    const completedConsultationsList = useMemo(() => {
-        return [];
+    // Past date consultations generator (for Nov 5th Yesterday = 88 patients, This Week = 542)
+    const yesterdayConsultationsList = useMemo(() => {
+        const names = [
+            'Aarav', 'Ananya', 'Rudransh', 'Kavya', 'Aditya', 'Pooja', 'Sai Teja', 'Sunita', 'Rohan', 'Eshwar',
+            'Tarun', 'Vikas', 'Meera', 'Priya', 'Divya', 'Sneha', 'Kartik', 'Deepak', 'Kunal', 'Varun',
+            'Sanjay', 'Ajay', 'Sachin', 'Harish', 'Praveen', 'Alok', 'Mohit', 'Rakesh', 'Manish', 'Gaurav',
+            'Nikhil', 'Neha', 'Komal', 'Ritu', 'Swati', 'Shreya', 'Anjali', 'Tanvi', 'Payal', 'Bhavna',
+            'Ashish', 'Chetan', 'Dinesh', 'Girish', 'Hemant', 'Jitendra', 'Lalit', 'Manoj', 'Nitin', 'Pradeep',
+            'Rahul', 'Sandip', 'Tushar', 'Umesh', 'Vipul', 'Yogesh', 'Amit', 'Bhupesh', 'Chirag', 'Devendra',
+            'Gagan', 'Inder', 'Jayant', 'Kapil', 'Lokendra', 'Mayank', 'Naval', 'Omkar', 'Pankaj', 'Rajiv',
+            'Sumit', 'Tejas', 'Utkarsh', 'Vivek', 'Yash', 'Abhinav', 'Brijesh', 'Chandan', 'Darshan', 'Gopal',
+            'Harshit', 'Ishwar', 'Jagdish', 'Kailash', 'Lokesh', 'Madhav', 'Nirmal', 'Pramod'
+        ];
+
+        const depts = [
+            { code: 'GP', doctor: 'Dr. Srikanth (General Physician)', room: 'Room 201', prefix: 'GP', count: 20, ageBase: 32, rx: 'Antibiotic Course & Rest Advised' },
+            { code: 'PED', doctor: 'Dr. Anita (Pediatrics)', room: 'Room 104', prefix: 'PED', count: 18, ageBase: 5, rx: 'Pediatric Vitals Checked & Drops Prescribed' },
+            { code: 'ORT', doctor: 'Dr. Ashwin (Orthopedics)', room: 'Room 101', prefix: 'ORT', count: 18, ageBase: 44, rx: 'X-Ray Evaluated & Pain Relief Gel Prescribed' },
+            { code: 'CARD', doctor: 'Dr. Rajesh Verma (Cardiology)', room: 'Room 205', prefix: 'CARD', count: 16, ageBase: 56, rx: 'ECG Normal — Blood Pressure Medication Adjusted' },
+            { code: 'LAB', doctor: 'Dr. Ajay Sharma (Pathology & Lab)', room: 'Lab 1', prefix: 'LAB', count: 16, ageBase: 36, rx: 'Blood Sample Analyzed — CBC & Platelet Report Ready' }
+        ];
+
+        const list = [];
+        let nameIdx = 0;
+
+        depts.forEach(dept => {
+            for (let i = 1; i <= dept.count; i++) {
+                const name = names[nameIdx++] || `Patient ${i}`;
+                const totalMinutes = 8 * 60 + 30 + (i * 12) % 360;
+                const hour24 = Math.floor(totalMinutes / 60);
+                const minute = totalMinutes % 60;
+                const ampm = hour24 >= 12 ? 'PM' : 'AM';
+                const hour12 = hour24 > 12 ? hour24 - 12 : hour24;
+                const timeString = `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+                const age = dept.code === 'PED' ? (2 + (i % 8)) : (dept.ageBase + (i % 20));
+                const gender = (i % 3 === 0) ? 'F' : 'M';
+
+                list.push({
+                    token: `${dept.prefix}${String(i).padStart(2, '0')}`,
+                    name,
+                    ageGender: `${age} ${gender}`,
+                    deptCode: dept.code,
+                    attendedTime: timeString,
+                    prescription: dept.rx,
+                    doctor: dept.doctor,
+                    room: dept.room,
+                    status: 'COMPLETED'
+                });
+            }
+        });
+
+        return list;
     }, []);
 
     // Distinct Dataset for Date Filter
@@ -204,13 +253,21 @@ export default function Analytics() {
         let rawRecords = [];
 
         if (selectedMetric === 'consultations') {
-            const dynamicCompleted = (analytics.completedTokensList || []).map(r => ({
-                ...r,
-                deptCode: r.token?.includes('PED') ? 'PED' : r.token?.includes('ORT') ? 'ORT' : r.token?.includes('CARD') ? 'CARD' : r.token?.includes('LAB') ? 'LAB' : 'GP'
-            }));
+            let baseList = [];
+            if (filter === 'yesterday') {
+                baseList = yesterdayConsultationsList; // 88 patients for Nov 5th Yesterday
+            } else if (filter === 'week') {
+                baseList = yesterdayConsultationsList;
+            } else {
+                // Today: dynamic live consultations starting from 0
+                baseList = (analytics.completedTokensList || []).map(r => ({
+                    ...r,
+                    deptCode: r.token?.includes('PED') ? 'PED' : r.token?.includes('ORT') ? 'ORT' : r.token?.includes('CARD') ? 'CARD' : r.token?.includes('LAB') ? 'LAB' : 'GP'
+                }));
+            }
             
             // Sort by Department and Token Number
-            const sortedCompleted = [...dynamicCompleted].sort((a, b) => {
+            const sortedCompleted = [...baseList].sort((a, b) => {
                 const deptOrder = { PED: 1, ORT: 2, CARD: 3, GP: 4, LAB: 5 };
                 const orderA = deptOrder[a.deptCode] || 99;
                 const orderB = deptOrder[b.deptCode] || 99;
@@ -221,9 +278,9 @@ export default function Analytics() {
                 return numA - numB;
             });
 
-            title = 'Completed Consultations Audit (All Doctors)';
+            title = `Completed Consultations Audit (${currentViewData.label})`;
             subtitle = sortedCompleted.length > 0
-                ? `All attended patients who completed consultation today (${sortedCompleted.length} patients).`
+                ? `All attended patients who completed consultation (${sortedCompleted.length} patients in ${currentViewData.label}).`
                 : 'No patients have completed consultation yet today. Register and attend patients to see their completed audit record.';
             icon = Users;
             color = 'text-teal-600';
@@ -478,7 +535,7 @@ export default function Analytics() {
                         }`}
                     >
                         <Users className="w-3.5 h-3.5" />
-                        <span>Total Consultations ({(analytics.completedTokensList?.length || 0)})</span>
+                        <span>Total Consultations ({currentViewData.totalConsultations})</span>
                     </button>
 
                     <button
