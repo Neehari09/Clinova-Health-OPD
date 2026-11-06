@@ -33,12 +33,12 @@ class QueueViewSet(viewsets.ModelViewSet):
             attended_str = ''
             if t.completed_at:
                 local_time = timezone.localtime(t.completed_at)
-                attended_str = local_time.strftime('%I:%M %p')
+                attended_str = local_time.strftime('%b %d, %Y, %I:%M %p')
             elif t.served_at:
                 local_time = timezone.localtime(t.served_at)
-                attended_str = local_time.strftime('%I:%M %p')
+                attended_str = local_time.strftime('%b %d, %Y, %I:%M %p')
             else:
-                attended_str = timezone.localtime(timezone.now()).strftime('%I:%M %p')
+                attended_str = timezone.localtime(timezone.now()).strftime('%b %d, %Y, %I:%M %p')
 
             notes = t.notes or ''
             rx = ''

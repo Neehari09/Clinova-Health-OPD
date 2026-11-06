@@ -178,7 +178,7 @@ export default function Analytics() {
                 const minute = totalMinutes % 60;
                 const ampm = hour24 >= 12 ? 'PM' : 'AM';
                 const hour12 = hour24 > 12 ? hour24 - 12 : hour24;
-                const timeString = `${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
+                const timeString = `Nov 05, 2026, ${String(hour12).padStart(2, '0')}:${String(minute).padStart(2, '0')} ${ampm}`;
                 const age = dept.code === 'PED' ? (2 + (i % 8)) : (dept.ageBase + (i % 20));
                 const gender = (i % 3 === 0) ? 'F' : 'M';
 

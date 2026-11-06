@@ -264,11 +264,13 @@ export const QueueProvider = ({ children }) => {
         }
     };
 
-    // Complete Active Consultation with Selected/Typed Prescription & Exact Attended Time
+    // Complete Active Consultation with Selected/Typed Prescription & Exact Attended Time with Date
     const completeActiveConsultation = async (tokenId, customPrescription = '') => {
         if (currentlyServing) {
             const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const fullDateTimeStr = `${dateStr}, ${timeStr}`;
 
             setCompletedTokensList((prev) => [
                 {
@@ -277,7 +279,7 @@ export const QueueProvider = ({ children }) => {
                     ageGender: `${currentlyServing.age} ${currentlyServing.gender}`,
                     doctor: activeQueue?.name || 'General OPD',
                     room: activeQueue?.room || 'Room 101',
-                    attendedTime: timeStr,
+                    attendedTime: fullDateTimeStr,
                     prescription: customPrescription || 'Rx Generated & Pharmacy Order Dispatched',
                     status: 'COMPLETED'
                 },
