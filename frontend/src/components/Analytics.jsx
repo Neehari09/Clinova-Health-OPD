@@ -332,7 +332,7 @@ export default function Analytics() {
             totalCount: filteredByDept.length,
             unfilteredCount: rawRecords.length
         };
-    }, [selectedMetric, deptFilter, completedConsultationsList, allHospitalWaitingPatients, analytics.completedTokensList, searchQuery]);
+    }, [selectedMetric, deptFilter, filter, yesterdayConsultationsList, allHospitalWaitingPatients, analytics.completedTokensList, searchQuery, currentViewData]);
 
     const openDetailPage = (metric) => {
         setSelectedMetric(metric);
