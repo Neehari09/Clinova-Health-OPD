@@ -102,7 +102,7 @@ class QueueSerializer(serializers.ModelSerializer):
 
         return {
             'prefix': prefix,
-            'last_token': last_token or f"None (0 for today)",
+            'last_token': last_token,
             'next_token': next_token
         }
 

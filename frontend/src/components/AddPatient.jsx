@@ -68,7 +68,7 @@ export default function AddPatient({ isOpen, onClose }) {
 
         return {
             prefix,
-            last_token: 'None (0 for today)',
+            last_token: null,
             next_token: `${prefix}-${dateCode}-001`
         };
     }, [selectedQueue]);
@@ -183,9 +183,11 @@ export default function AddPatient({ isOpen, onClose }) {
                                     <Tag className="w-3 h-3 text-cyan-600" />
                                     <span>Token # *</span>
                                 </label>
-                                <span className="text-[10px] font-bold text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                    Last: <strong className="text-cyan-700">{deptInfo?.last_token}</strong>
-                                </span>
+                                {deptInfo?.last_token && !deptInfo.last_token.toLowerCase().includes('none') && (
+                                    <span className="text-[10px] font-bold text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                        Last: <strong className="text-cyan-700">{deptInfo.last_token}</strong>
+                                    </span>
+                                )}
                             </div>
                             <input
                                 type="text"
