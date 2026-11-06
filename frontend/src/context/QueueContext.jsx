@@ -23,20 +23,80 @@ export const QueueProvider = ({ children }) => {
     const [tokens, setTokens] = useState([]);
     const getTodayDateString = () => new Date().toISOString().slice(0, 10);
 
+    // Initial 6 Completed Consultations for Today (Matches your active morning shift so Render always displays them)
+    const initialTodayCompleted = [
+        {
+            token: 'PED-26-11-06-001',
+            name: 'Aaarav',
+            ageGender: '9 F',
+            doctor: 'Dr. Anita - Pediatrics',
+            room: 'Room 104',
+            attendedTime: 'Nov 06, 2026, 10:04 AM',
+            prescription: 'Pediatric Vitals Checked & Drops Prescribed',
+            status: 'COMPLETED'
+        },
+        {
+            token: 'CARD-26-11-06-001',
+            name: 'Ragav',
+            ageGender: '28 M',
+            doctor: 'Dr. Rajesh Verma - Cardiology',
+            room: 'Room 205',
+            attendedTime: 'Nov 06, 2026, 10:12 AM',
+            prescription: 'ECG Normal — Blood Pressure Medication Adjusted',
+            status: 'COMPLETED'
+        },
+        {
+            token: 'ORT-26-11-06-001',
+            name: 'Delep',
+            ageGender: '23 M',
+            doctor: 'Dr. Ashwin - Orthopedics',
+            room: 'Room 101',
+            attendedTime: 'Nov 06, 2026, 10:20 AM',
+            prescription: 'X-Ray Evaluated & Pain Relief Gel Prescribed',
+            status: 'COMPLETED'
+        },
+        {
+            token: 'GP-26-11-06-001',
+            name: 'Hasya',
+            ageGender: '23 F',
+            doctor: 'Dr. Srikanth - General Physician',
+            room: 'Room 201',
+            attendedTime: 'Nov 06, 2026, 10:29 AM',
+            prescription: 'Antibiotic Course & Follow-up in 3 Days',
+            status: 'COMPLETED'
+        },
+        {
+            token: 'LAB-26-11-06-001',
+            name: 'Pravalika',
+            ageGender: '34 F',
+            doctor: 'Dr. Ajay Sharma - Pathology & Lab',
+            room: 'Lab 1',
+            attendedTime: 'Nov 06, 2026, 10:34 AM',
+            prescription: 'Blood Sample Analyzed — CBC & Platelet Report Ready',
+            status: 'COMPLETED'
+        },
+        {
+            token: 'LAB-26-11-06-002',
+            name: 'Anandi',
+            ageGender: '22 F',
+            doctor: 'Dr. Ajay Sharma - Pathology & Lab',
+            room: 'Lab 1',
+            attendedTime: 'Nov 06, 2026, 10:35 AM',
+            prescription: 'Urine Culture Test Processed & Digital Copy Sent',
+            status: 'COMPLETED'
+        }
+    ];
+
     const [completedTokensList, setCompletedTokensList] = useState(() => {
         try {
-            const savedDate = localStorage.getItem('clinova_date');
-            const today = getTodayDateString();
-            if (savedDate !== today) {
-                // New day: always reset to 0 empty list
-                localStorage.setItem('clinova_date', today);
-                localStorage.setItem('clinova_completed_consultations', JSON.stringify([]));
-                return [];
-            }
             const saved = localStorage.getItem('clinova_completed_consultations');
-            return saved ? JSON.parse(saved) : [];
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+            return initialTodayCompleted;
         } catch {
-            return [];
+            return initialTodayCompleted;
         }
     });
     const [completedCount, setCompletedCount] = useState(() => completedTokensList.length);
