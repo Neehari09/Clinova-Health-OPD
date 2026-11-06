@@ -41,7 +41,7 @@ export default function AddPatient({ isOpen, onClose }) {
         return queues.find((q) => q.id === Number(doctorQueueId)) || queues[0];
     }, [queues, doctorQueueId]);
 
-    // Department prefix & last token lookup (Starting from 01 sequence)
+    // Department prefix & last token lookup (Format: DEPT-YY-MM-DD-001)
     const deptInfo = useMemo(() => {
         if (selectedQueue?.next_token_preview) {
             return selectedQueue.next_token_preview;
@@ -49,27 +49,27 @@ export default function AddPatient({ isOpen, onClose }) {
         const dept = (selectedQueue?.department || '').toLowerCase();
         const nameLow = (selectedQueue?.name || '').toLowerCase();
         let prefix = 'GP';
-        let last = 26;
 
         if (dept.includes('ped') || nameLow.includes('ped')) {
             prefix = 'PED';
-            last = 27;
         } else if (dept.includes('ortho') || nameLow.includes('ortho')) {
             prefix = 'ORT';
-            last = 26;
         } else if (dept.includes('card') || nameLow.includes('card')) {
             prefix = 'CARD';
-            last = 26;
         } else if (dept.includes('diag') || dept.includes('path') || nameLow.includes('pathology')) {
             prefix = 'LAB';
-            last = 26;
         }
 
-        const nextNum = last + 1;
+        const now = new Date();
+        const yy = String(now.getFullYear()).slice(-2);
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const dateCode = `${yy}-${mm}-${dd}`;
+
         return {
             prefix,
-            last_token: `${prefix}${String(last).padStart(2, '0')}`,
-            next_token: `${prefix}${String(nextNum).padStart(2, '0')}`
+            last_token: 'None (0 for today)',
+            next_token: `${prefix}-${dateCode}-001`
         };
     }, [selectedQueue]);
 

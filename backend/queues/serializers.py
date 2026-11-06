@@ -64,40 +64,46 @@ class QueueSerializer(serializers.ModelSerializer):
         return [{'id': t.id, 'patientName': t.patient_name, 'gender': t.gender, 'tokenNumber': t.token_number} for t in qs]
 
     def get_next_token_preview(self, obj):
+        from django.utils import timezone
+        now = timezone.localtime(timezone.now())
+        start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        date_prefix = now.strftime('%y-%m-%d')  # e.g. "26-11-06"
+
         dept = (obj.department or '').lower()
         name_low = (obj.name or '').lower()
         if 'pediatric' in dept or 'pediatric' in name_low:
             prefix = 'PED'
-            base_completed_max = 27
         elif 'diag' in dept or 'pathology' in name_low or 'lab' in name_low:
             prefix = 'LAB'
-            base_completed_max = 26
         elif 'cardio' in dept or 'cardio' in name_low:
             prefix = 'CARD'
-            base_completed_max = 26
         elif 'ortho' in dept or 'ortho' in name_low:
             prefix = 'ORT'
-            base_completed_max = 26
         else:
             prefix = 'GP'
-            base_completed_max = 26
 
-        existing_nums = [base_completed_max]
-        for t in obj.tokens.all():
-            m = re.search(r'\d+', t.token_number or '')
-            if m:
-                existing_nums.append(int(m.group()))
+        # Look up tokens created TODAY for this doctor queue
+        today_tokens = obj.tokens.filter(created_at__gte=start_of_today)
+        seq_nums = []
+        for t in today_tokens:
+            num_match = re.search(r'(\d+)$', t.token_number or '')
+            if num_match:
+                seq_nums.append(int(num_match.group(1)))
 
-        last_num = max(existing_nums)
-        next_num = last_num + 1
+        if seq_nums:
+            last_num = max(seq_nums)
+            next_num = last_num + 1
+            last_token = f"{prefix}-{date_prefix}-{last_num:03d}"
+        else:
+            last_token = None
+            next_num = 1
 
-        last_fmt = f"{last_num:02d}"
-        next_fmt = f"{next_num:02d}"
+        next_token = f"{prefix}-{date_prefix}-{next_num:03d}"
 
         return {
             'prefix': prefix,
-            'last_token': f"{prefix}{last_fmt}",
-            'next_token': f"{prefix}{next_fmt}"
+            'last_token': last_token or f"None (0 for today)",
+            'next_token': next_token
         }
 
     def get_currently_serving(self, obj):

@@ -33,7 +33,7 @@ class Token(models.Model):
     ]
 
     queue = models.ForeignKey(Queue, on_delete=models.CASCADE, related_name='tokens')
-    token_number = models.CharField(max_length=20)  # e.g. "#MED-101"
+    token_number = models.CharField(max_length=40)  # e.g. "LAB-26-11-06-001"
     patient_name = models.CharField(max_length=120)  # Person's name
     age = models.IntegerField(default=30)
     gender = models.CharField(max_length=10, default='M')
