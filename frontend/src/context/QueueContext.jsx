@@ -19,7 +19,7 @@ export const QueueProvider = ({ children }) => {
     const [selectedQueueId, setSelectedQueueId] = useState(null);
 
     // 3. Tokens List & Persistent Completed Consultations
-    // Clean daily slate: starts from today's real completed consultations (0 initial)
+    // Clean daily slate: ONLY patients manually registered and completed by the manager today!
     const [tokens, setTokens] = useState([]);
     const getTodayDateString = () => new Date().toISOString().slice(0, 10);
 
@@ -28,7 +28,7 @@ export const QueueProvider = ({ children }) => {
             const savedDate = localStorage.getItem('clinova_date');
             const today = getTodayDateString();
             if (savedDate !== today) {
-                // New day: clean slate starting fresh from 0
+                // New day: always reset to 0 empty list
                 localStorage.setItem('clinova_date', today);
                 localStorage.setItem('clinova_completed_consultations', JSON.stringify([]));
                 return [];
@@ -53,7 +53,7 @@ export const QueueProvider = ({ children }) => {
         }
     }, [completedTokensList]);
 
-    // Fetch queues and all completed tokens from Django API on mount
+    // Fetch queues and sync ONLY today's completed tokens from Django API on mount
     const fetchQueues = async () => {
         try {
             const res = await queueApi.getQueues();
@@ -64,10 +64,10 @@ export const QueueProvider = ({ children }) => {
                 }
             }
 
-            // Sync all completed tokens from backend DB so they never vanish
+            // Sync today's completed tokens from backend DB (only what manager completed today)
             try {
                 const compRes = await queueApi.getAllCompleted();
-                if (compRes.data && compRes.data.length > 0) {
+                if (compRes.data && Array.isArray(compRes.data)) {
                     setCompletedTokensList((prev) => {
                         const existingTokens = new Set(prev.map(p => p.token));
                         const incoming = compRes.data.filter(t => !existingTokens.has(t.token));

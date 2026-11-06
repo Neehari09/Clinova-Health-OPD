@@ -14,11 +14,20 @@ class QueueViewSet(viewsets.ModelViewSet):
     queryset = Queue.objects.all().order_by('-created_at')
     serializer_class = QueueSerializer
 
-    # All Completed Consultations across all queues (never vanish)
+    # Only Completed Consultations for TODAY (since midnight)
     @action(detail=False, methods=['get'])
     def all_completed(self, request):
         from django.utils import timezone
-        completed_tokens = Token.objects.filter(status='COMPLETED').order_by('completed_at')
+        import datetime
+        now = timezone.localtime(timezone.now())
+        start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Only tokens completed today by the manager
+        completed_tokens = Token.objects.filter(
+            status='COMPLETED',
+            completed_at__gte=start_of_today
+        ).order_by('-completed_at')
+
         result = []
         for t in completed_tokens:
             attended_str = ''
